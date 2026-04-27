@@ -138,5 +138,5 @@ export function StarfieldCanvas() {
     return () => { window.removeEventListener('resize', resize); cancelAnimationFrame(animationRef.current); };
   }, []);
 
-  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }} />;
+  return <canvas ref={canvasRef} className="w-full h-full pointer-events-none" />;
 }

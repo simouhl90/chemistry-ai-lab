@@ -102,20 +102,39 @@ function App() {
 function AppContent() {
   const { backgroundTheme } = useLab();
 
-  const bgStyle = backgroundTheme === 'gradient'
-    ? { background: 'linear-gradient(135deg, #030712 0%, #0a1628 25%, #0d1117 50%, #0a0f1e 75%, #050b14 100%)' }
-    : { background: '#050b14' };
+  const backgrounds: Record<string, React.FC> = {
+    neural: NeuralCanvas,
+    hexagonal: HexagonalCanvas,
+    atoms: AtomsCanvas,
+    starfield: StarfieldCanvas,
+  };
+
+  const CanvasComponent = backgrounds[backgroundTheme];
 
   return (
-    <div className="h-screen w-screen flex flex-col relative overflow-hidden" style={bgStyle}>
-      {backgroundTheme === 'neural' && <NeuralCanvas />}
-      {backgroundTheme === 'hexagonal' && <HexagonalCanvas />}
-      {backgroundTheme === 'atoms' && <AtomsCanvas />}
-      {backgroundTheme === 'starfield' && <StarfieldCanvas />}
-      {/* gradient theme has no canvas */}
-      
+    <div
+      className="h-screen w-screen flex flex-col relative overflow-hidden"
+      style={{ background: '#050b14' }}
+    >
+      {/* Background layer */}
+      <div className="fixed inset-0" style={{ zIndex: 0 }}>
+        {CanvasComponent ? <CanvasComponent key={backgroundTheme} /> : null}
+      </div>
+
+      {/* Gradient overlay for gradient theme */}
+      {backgroundTheme === 'gradient' && (
+        <div
+          key="gradient-bg"
+          className="fixed inset-0"
+          style={{
+            zIndex: 0,
+            background: 'linear-gradient(135deg, #030712 0%, #0a1628 25%, #0d1117 50%, #0a0f1e 75%, #050b14 100%)',
+          }}
+        />
+      )}
+
       <TopBar />
-      
+
       <div className="flex-1 flex overflow-hidden relative z-10">
         <LeftSidebar />
         <MainContent />
