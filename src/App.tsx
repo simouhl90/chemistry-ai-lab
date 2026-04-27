@@ -1,5 +1,9 @@
 import { LabProvider, useLab } from './context/LabContext';
 import { NeuralCanvas } from './components/canvas/NeuralCanvas';
+import { HexagonalCanvas } from './components/canvas/HexagonalCanvas';
+import { GradientCanvas } from './components/canvas/GradientCanvas';
+import { AtomsCanvas } from './components/canvas/AtomsCanvas';
+import { StarfieldCanvas } from './components/canvas/StarfieldCanvas';
 import { TopBar } from './components/layout/TopBar';
 import { LeftSidebar } from './components/layout/LeftSidebar';
 import { RightSidebar } from './components/layout/RightSidebar';
@@ -90,18 +94,34 @@ function MainContent() {
 function App() {
   return (
     <LabProvider>
-      <div className="h-screen w-screen flex flex-col relative overflow-hidden" style={{ background: '#050b14' }}>
-        <NeuralCanvas />
-        
-        <TopBar />
-        
-        <div className="flex-1 flex overflow-hidden relative z-10">
-          <LeftSidebar />
-          <MainContent />
-          <RightSidebar />
-        </div>
-      </div>
+      <AppContent />
     </LabProvider>
+  );
+}
+
+function AppContent() {
+  const { backgroundTheme } = useLab();
+
+  const bgStyle = backgroundTheme === 'gradient'
+    ? { background: 'linear-gradient(135deg, #030712 0%, #0a1628 25%, #0d1117 50%, #0a0f1e 75%, #050b14 100%)' }
+    : { background: '#050b14' };
+
+  return (
+    <div className="h-screen w-screen flex flex-col relative overflow-hidden" style={bgStyle}>
+      {backgroundTheme === 'neural' && <NeuralCanvas />}
+      {backgroundTheme === 'hexagonal' && <HexagonalCanvas />}
+      {backgroundTheme === 'atoms' && <AtomsCanvas />}
+      {backgroundTheme === 'starfield' && <StarfieldCanvas />}
+      {/* gradient theme has no canvas */}
+      
+      <TopBar />
+      
+      <div className="flex-1 flex overflow-hidden relative z-10">
+        <LeftSidebar />
+        <MainContent />
+        <RightSidebar />
+      </div>
+    </div>
   );
 }
 

@@ -4,6 +4,16 @@ import { elements } from '../data/elements';
 import { reactionRules, getReactionType, newsItems } from '../data/reactions';
 import { v4 as uuidv4 } from 'uuid';
 
+export type BackgroundTheme = 'neural' | 'hexagonal' | 'gradient' | 'atoms' | 'starfield';
+
+export const backgroundThemes: { id: BackgroundTheme; label: string; icon: string }[] = [
+  { id: 'neural', label: 'Neural Network', icon: '🧠' },
+  { id: 'hexagonal', label: 'Molecular Grid', icon: '⬡' },
+  { id: 'gradient', label: 'Clean Gradient', icon: '✨' },
+  { id: 'atoms', label: 'Floating Atoms', icon: '⚛️' },
+  { id: 'starfield', label: 'Deep Space', icon: '🌌' },
+];
+
 interface LabContextType {
   selectedElement: ChemicalElement | null;
   setSelectedElement: (el: ChemicalElement | null) => void;
@@ -23,6 +33,8 @@ interface LabContextType {
   news: NewsItem[];
   experimentCount: number;
   activityLog: ActivityLogEntry[];
+  backgroundTheme: BackgroundTheme;
+  setBackgroundTheme: (theme: BackgroundTheme) => void;
 }
 
 const LabContext = createContext<LabContextType | undefined>(undefined);
@@ -38,6 +50,7 @@ export function LabProvider({ children }: { children: ReactNode }) {
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [experimentCount, setExperimentCount] = useState(0);
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
+  const [backgroundTheme, setBackgroundTheme] = useState<BackgroundTheme>('neural');
 
   const addActivity = useCallback((action: string, status: ActivityLogEntry['status'] = 'info') => {
     setActivityLog(prev => [{
@@ -157,6 +170,8 @@ export function LabProvider({ children }: { children: ReactNode }) {
       news: newsItems,
       experimentCount,
       activityLog,
+      backgroundTheme,
+      setBackgroundTheme,
     }}>
       {children}
     </LabContext.Provider>
