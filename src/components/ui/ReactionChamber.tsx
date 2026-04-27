@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLab } from '../../context/LabContext';
 import { cn } from '../../lib/utils';
-import { FlaskConical, Zap, Beaker, X, RotateCcw, Thermometer, Gauge, Trash2, RefreshCw, Plus } from 'lucide-react';
+import { FlaskConical, Zap, Beaker, X, RotateCcw, Thermometer, Gauge, Trash2, RefreshCw, Plus, Globe, CheckCircle2, AlertCircle, Shield, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
 function ReactionFlask({ reactant, position, onRemove, onReplace }: { reactant: any; position: 'left' | 'right'; onRemove: () => void; onReplace: () => void }) {
@@ -17,17 +17,10 @@ function ReactionFlask({ reactant, position, onRemove, onReplace }: { reactant: 
         position === 'left' ? 'border-blue-300 bg-blue-50' : 'border-purple-300 bg-purple-50'
       )}>
         <motion.div
-          animate={{ 
-            height: ['55%', '60%', '55%'],
-            opacity: [0.3, 0.5, 0.3]
-          }}
+          animate={{ height: ['55%', '60%', '55%'], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 3, repeat: Infinity }}
-          className={cn(
-            'absolute bottom-0 left-0 right-0 rounded-b-xl',
-            position === 'left' ? 'bg-blue-200' : 'bg-purple-200'
-          )}
+          className={cn('absolute bottom-0 left-0 right-0 rounded-b-xl', position === 'left' ? 'bg-blue-200' : 'bg-purple-200')}
         />
-        
         <div className="relative z-10 text-center">
           <div className="text-3xl font-bold text-gray-800">{reactant.element.symbol}</div>
           <div className="text-xs text-gray-600 mt-1">{reactant.element.name}</div>
@@ -38,7 +31,6 @@ function ReactionFlask({ reactant, position, onRemove, onReplace }: { reactant: 
             Mass: {reactant.element.atomicMass}
           </div>
         </div>
-        
         <button
           onClick={onRemove}
           className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/80 border border-gray-200 flex items-center justify-center hover:bg-red-50 hover:border-red-300 transition-colors"
@@ -47,7 +39,6 @@ function ReactionFlask({ reactant, position, onRemove, onReplace }: { reactant: 
           <X className="w-3 h-3 text-gray-500" />
         </button>
       </div>
-      
       <div className="flex items-center gap-2">
         <span className="text-[10px] text-gray-400 font-mono uppercase">
           {position === 'left' ? 'Reactant A' : 'Reactant B'}
@@ -72,17 +63,9 @@ function EmptyFlask({ position }: { position: 'left' | 'right' }) {
         'w-36 h-44 rounded-xl border-2 border-dashed flex flex-col items-center justify-center',
         position === 'left' ? 'border-blue-200 bg-blue-50/50' : 'border-purple-200 bg-purple-50/50'
       )}>
-        <FlaskConical className={cn(
-          'w-10 h-10 mb-3',
-          position === 'left' ? 'text-blue-300' : 'text-purple-300'
-        )} />
-        <span className="text-xs text-gray-400 font-mono">
-          Click element to add
-        </span>
-        <Plus className={cn(
-          'w-5 h-5 mt-2 rounded-full border',
-          position === 'left' ? 'text-blue-300 border-blue-200' : 'text-purple-300 border-purple-200'
-        )} />
+        <FlaskConical className={cn('w-10 h-10 mb-3', position === 'left' ? 'text-blue-300' : 'text-purple-300')} />
+        <span className="text-xs text-gray-400 font-mono">Click element to add</span>
+        <Plus className={cn('w-5 h-5 mt-2 rounded-full border', position === 'left' ? 'text-blue-300 border-blue-200' : 'text-purple-300 border-purple-200')} />
       </div>
       <span className="text-[10px] text-gray-400 font-mono uppercase">
         {position === 'left' ? 'Reactant A' : 'Reactant B'}
@@ -91,7 +74,7 @@ function EmptyFlask({ position }: { position: 'left' | 'right' }) {
   );
 }
 
-function SynthesizeButton() {
+function SynthesizeButton({ temperature, pressure }: { temperature: number; pressure: number }) {
   const { synthesize, isSynthesizing, reactants } = useLab();
   const canSynthesize = reactants.length === 2;
 
@@ -99,27 +82,23 @@ function SynthesizeButton() {
     <motion.button
       whileHover={{ scale: canSynthesize ? 1.08 : 1 }}
       whileTap={{ scale: canSynthesize ? 0.92 : 1 }}
-      onClick={synthesize}
+      onClick={() => synthesize(temperature, pressure)}
       disabled={!canSynthesize || isSynthesizing}
       className={cn(
         'w-20 h-20 rounded-full flex items-center justify-center relative transition-all duration-300',
-        canSynthesize 
+        canSynthesize
           ? 'bg-gradient-to-br from-blue-500 to-blue-700 text-white cursor-pointer shadow-lg shadow-blue-200'
           : 'bg-gray-200 text-gray-400 cursor-not-allowed'
       )}
       title={canSynthesize ? 'Run synthesis' : 'Add 2 elements first'}
     >
       {isSynthesizing ? (
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-        >
+        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
           <Zap className="w-8 h-8" />
         </motion.div>
       ) : (
         <Zap className="w-8 h-8" />
       )}
-      
       {canSynthesize && !isSynthesizing && (
         <motion.div
           className="absolute inset-0 rounded-full border-2 border-blue-400"
@@ -128,6 +107,80 @@ function SynthesizeButton() {
         />
       )}
     </motion.button>
+  );
+}
+
+function VerificationPanel({ result }: { result: any }) {
+  const { isVerifying, verificationResult } = useLab();
+
+  return (
+    <div className={cn(
+      'rounded-lg p-3 mt-3 border',
+      verificationResult?.isKnown
+        ? 'bg-emerald-50 border-emerald-200'
+        : 'bg-amber-50 border-amber-200'
+    )}>
+      <div className="flex items-center gap-2 text-xs font-bold mb-2">
+        <Globe className="w-3.5 h-3.5 text-blue-600" />
+        <span className="text-gray-600">AI Verification</span>
+        {isVerifying && (
+          <Loader2 className="w-3 h-3 animate-spin text-blue-500" />
+        )}
+      </div>
+      
+      {isVerifying ? (
+        <div className="flex items-center gap-2">
+          <motion.div
+            animate={{ opacity: [0.3, 1, 0.3] }}
+            transition={{ duration: 1.2, repeat: Infinity }}
+            className="text-[11px] text-blue-600 font-mono"
+          >
+            Searching chemical databases...
+          </motion.div>
+        </div>
+      ) : verificationResult ? (
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            {verificationResult.isKnown ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-amber-600" />
+            )}
+            <span className={cn(
+              'text-xs font-bold',
+              verificationResult.isKnown ? 'text-emerald-700' : 'text-amber-700'
+            )}>
+              {verificationResult.isKnown
+                ? `Known Compound — ${result.formula} exists in chemistry databases`
+                : `Unverified — ${result.formula} may be novel or uncommon`}
+            </span>
+          </div>
+          
+          {verificationResult.summary && (
+            <p className="text-[11px] text-gray-500 leading-relaxed mb-2">
+              {verificationResult.summary}
+            </p>
+          )}
+          
+          {verificationResult.sources.length > 0 && (
+            <div className="space-y-1.5">
+              {verificationResult.sources.slice(0, 3).map((src: any, i: number) => (
+                <a
+                  key={i}
+                  href={src.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-[10px] text-blue-600 hover:text-blue-800 hover:underline truncate"
+                  title={src.snippet}
+                >
+                  {src.title}
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -142,60 +195,97 @@ function ReactionOutput() {
           animate={{ opacity: 1, scale: 1, rotateY: 0 }}
           exit={{ opacity: 0, scale: 0.8 }}
           transition={{ type: 'spring', damping: 20 }}
-          className="glass-panel rounded-xl p-5 w-72"
+          className="glass-panel rounded-xl p-5 w-80"
           style={{ perspective: 1000 }}
         >
-          <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-            <Beaker className="w-4 h-4 text-emerald-600" />
-            Synthesis Result
-          </div>
-          
-          <div className="text-center mb-4">
-            <div 
-              className="w-18 h-18 rounded-full mx-auto mb-3 flex items-center justify-center text-xl font-bold text-white px-4 py-3"
-              style={{ backgroundColor: reactionResult.color, boxShadow: `0 4px 20px ${reactionResult.color}40` }}
-            >
-              {reactionResult.formula}
+          {reactionResult.stability === 'No Reaction' ? (
+            <div className="text-center py-4">
+              <Shield className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+              <div className="text-sm font-bold text-gray-700">No Reaction</div>
+              <p className="text-xs text-gray-500 mt-2">
+                {reactionResult.description}
+              </p>
+              <button
+                onClick={clearReactants}
+                className="mt-4 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-gray-100 border border-gray-200 hover:bg-gray-200 transition-colors text-gray-600"
+              >
+                <Trash2 className="w-3 h-3" />
+                Try Different Elements
+              </button>
             </div>
-            <div className="text-sm font-bold text-gray-900">{reactionResult.name}</div>
-            <div className="text-xs text-gray-500">{reactionResult.phase} at STP</div>
-          </div>
-          
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Predicted Yield</span>
-              <span className="font-mono text-blue-700">{reactionResult.yield.toFixed(1)}%</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Stability</span>
-              <span className={cn(
-                'font-mono',
-                reactionResult.stability === 'Stable' ? 'text-emerald-600' :
-                reactionResult.stability === 'Unstable' ? 'text-amber-600' :
-                'text-red-600'
-              )}>
-                {reactionResult.stability}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Confidence</span>
-              <span className="font-mono text-blue-700">{reactionResult.confidence.toFixed(1)}%</span>
-            </div>
-          </div>
-          
-          <div className="mt-3 text-[11px] text-gray-500 leading-relaxed">
-            {reactionResult.description}
-          </div>
+          ) : (
+            <>
+              <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <Beaker className="w-4 h-4 text-emerald-600" />
+                Synthesis Result
+                {reactionResult.isKnown && (
+                  <span className="text-[9px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200 ml-1">
+                    KNOWN COMPOUND
+                  </span>
+                )}
+              </div>
+              
+              <div className="text-center mb-4">
+                <div 
+                  className="w-20 h-20 rounded-full mx-auto mb-3 flex items-center justify-center text-lg font-bold text-white px-3"
+                  style={{ backgroundColor: reactionResult.color, boxShadow: `0 4px 20px ${reactionResult.color}40` }}
+                >
+                  {reactionResult.formula}
+                </div>
+                <div className="text-sm font-bold text-gray-900">{reactionResult.name}</div>
+                <div className="text-xs text-gray-500">{reactionResult.phase} at STP</div>
+              </div>
+              
+              {/* Balanced Equation */}
+              <div className="bg-gray-50 rounded-lg p-2.5 mb-3">
+                <div className="text-[10px] text-gray-400 uppercase font-bold mb-1">Balanced Equation</div>
+                <div className="text-[11px] font-mono text-gray-700 font-semibold leading-relaxed">
+                  {reactionResult.balancedEquation}
+                </div>
+              </div>
+              
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Molar Mass</span>
+                  <span className="font-mono text-blue-700">{reactionResult.molarMass} g/mol</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Predicted Yield</span>
+                  <span className="font-mono text-blue-700">{reactionResult.yield.toFixed(1)}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Stability</span>
+                  <span className={cn(
+                    'font-mono',
+                    reactionResult.stability === 'Stable' ? 'text-emerald-600' :
+                    reactionResult.stability === 'Unstable' ? 'text-amber-600' : 'text-red-600'
+                  )}>
+                    {reactionResult.stability}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">AI Confidence</span>
+                  <span className="font-mono text-blue-700">{reactionResult.confidence.toFixed(1)}%</span>
+                </div>
+              </div>
+              
+              <div className="mt-3 text-[11px] text-gray-500 leading-relaxed">
+                {reactionResult.description}
+              </div>
 
-          <div className="mt-4 flex gap-2">
-            <button
-              onClick={clearReactants}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-gray-100 border border-gray-200 hover:bg-gray-200 transition-colors text-gray-600"
-            >
-              <Trash2 className="w-3 h-3" />
-              Clear & New Experiment
-            </button>
-          </div>
+              <VerificationPanel result={reactionResult} />
+
+              <div className="mt-4 flex gap-2">
+                <button
+                  onClick={clearReactants}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-gray-100 border border-gray-200 hover:bg-gray-200 transition-colors text-gray-600"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Clear & New Experiment
+                </button>
+              </div>
+            </>
+          )}
         </motion.div>
       )}
       
@@ -203,12 +293,9 @@ function ReactionOutput() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="w-64 h-44 glass-panel rounded-xl flex flex-col items-center justify-center"
+          className="w-72 h-48 glass-panel rounded-xl flex flex-col items-center justify-center"
         >
-          <motion.div
-            animate={{ rotate: 360, scale: [1, 1.2, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
+          <motion.div animate={{ rotate: 360, scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }}>
             <FlaskConical className="w-12 h-12 text-blue-600" />
           </motion.div>
           <motion.p
@@ -225,7 +312,7 @@ function ReactionOutput() {
 }
 
 export function ReactionChamber() {
-  const { reactants, clearReactants, removeReactant } = useLab();
+  const { reactants, clearReactants, removeReactants, aiStatus } = useLab();
   const [temperature, setTemperature] = useState(25);
   const [pressure, setPressure] = useState(1);
   const hasElements = reactants.length > 0;
@@ -255,7 +342,7 @@ export function ReactionChamber() {
               onChange={(e) => setTemperature(Number(e.target.value))}
               className="w-16 accent-blue-500"
             />
-            <span className="font-mono w-12">{temperature}°C</span>
+            <span className="font-mono w-14">{temperature}°C</span>
           </div>
           
           <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
@@ -268,23 +355,19 @@ export function ReactionChamber() {
               onChange={(e) => setPressure(Number(e.target.value))}
               className="w-16 accent-blue-500"
             />
-            <span className="font-mono w-10">{pressure}atm</span>
+            <span className="font-mono w-12">{pressure}atm</span>
           </div>
           
           {hasElements ? (
             <button
               onClick={clearReactants}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 border border-red-200 hover:bg-red-100 transition-colors text-red-600"
-              title="Clear all elements from chamber"
             >
               <Trash2 className="w-3.5 h-3.5" />
               Clear All
             </button>
           ) : (
-            <button
-              disabled
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 border border-gray-200 text-gray-300 cursor-not-allowed"
-            >
+            <button disabled className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 border border-gray-200 text-gray-300 cursor-not-allowed">
               <RotateCcw className="w-3.5 h-3.5" />
               Clear All
             </button>
@@ -297,11 +380,11 @@ export function ReactionChamber() {
         <div className="flex items-center justify-center gap-8 py-2">
           <AnimatePresence mode="wait">
             {reactants[0] ? (
-              <ReactionFlask 
+              <ReactionFlask
                 key={reactants[0].id}
-                reactant={reactants[0]} 
-                position="left" 
-                onRemove={() => removeReactant(reactants[0].id)} 
+                reactant={reactants[0]}
+                position="left"
+                onRemove={() => removeReactant(reactants[0].id)}
                 onReplace={() => removeReactant(reactants[0].id)}
               />
             ) : (
@@ -310,16 +393,21 @@ export function ReactionChamber() {
           </AnimatePresence>
           
           <div className="flex flex-col items-center gap-2">
-            <SynthesizeButton />
+            <SynthesizeButton temperature={temperature} pressure={pressure} />
+            {hasElements && (
+              <span className="text-[9px] text-gray-400 font-mono">
+                {temperature}°C / {pressure}atm
+              </span>
+            )}
           </div>
           
           <AnimatePresence mode="wait">
             {reactants[1] ? (
-              <ReactionFlask 
+              <ReactionFlask
                 key={reactants[1].id}
-                reactant={reactants[1]} 
-                position="right" 
-                onRemove={() => removeReactant(reactants[1].id)} 
+                reactant={reactants[1]}
+                position="right"
+                onRemove={() => removeReactant(reactants[1].id)}
                 onReplace={() => removeReactant(reactants[1].id)}
               />
             ) : (
@@ -335,17 +423,22 @@ export function ReactionChamber() {
       <div className="flex justify-center gap-4 text-[10px] text-gray-400 font-mono">
         <span className="flex items-center gap-1">
           <span className="w-5 h-5 rounded-full bg-blue-50 flex items-center justify-center text-[8px] text-blue-600 font-bold border border-blue-200">1</span>
-          Select 2 elements from periodic table
+          Select 2 elements
         </span>
         <span className="text-gray-300">→</span>
         <span className="flex items-center gap-1">
           <span className="w-5 h-5 rounded-full bg-blue-50 flex items-center justify-center text-[8px] text-blue-600 font-bold border border-blue-200">2</span>
-          Adjust conditions (optional)
+          Set temp/pressure
         </span>
         <span className="text-gray-300">→</span>
         <span className="flex items-center gap-1">
           <span className="w-5 h-5 rounded-full bg-blue-50 flex items-center justify-center text-[8px] text-blue-600 font-bold border border-blue-200">3</span>
-          Click synthesize to run
+          Synthesize
+        </span>
+        <span className="text-gray-300">→</span>
+        <span className="flex items-center gap-1">
+          <span className="w-5 h-5 rounded-full bg-emerald-50 flex items-center justify-center text-[8px] text-emerald-600 font-bold border border-emerald-200">4</span>
+          AI verifies result
         </span>
       </div>
     </div>

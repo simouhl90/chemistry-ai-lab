@@ -40,15 +40,36 @@ export interface ReactionResult {
   color: string;
   description: string;
   confidence: number;
+  balancedEquation: string;
+  molarMass: number;
+  isVerified: boolean;
+  isKnown: boolean;
+  category: string;
+}
+
+export interface Compound extends Omit<ReactionResult, 'isVerified' | 'confidence'> {
+  uses?: string;
 }
 
 export interface Discovery {
   id: string;
   title: string;
   formula: string;
+  name: string;
   confidence: number;
   timestamp: Date;
-  category: 'Catalyst' | 'Material' | 'Compound' | 'Reaction';
+  category: 'Catalyst' | 'Material' | 'Compound' | 'Reaction' | 'Predicted' | 'Alloy' | 'Noble Gas';
+  isKnown: boolean;
+  isVerified: boolean;
+  verificationResult?: VerificationResult;
+}
+
+export interface VerificationResult {
+  isKnown: boolean;
+  searchQuery: string;
+  summary: string;
+  sources: { title: string; url: string; snippet: string }[];
+  verifiedAt: Date;
 }
 
 export interface NewsItem {

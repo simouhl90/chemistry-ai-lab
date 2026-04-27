@@ -1,7 +1,8 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
-import type { ChemicalElement, Reactant, ReactionResult, Discovery, NewsItem, ActivityLogEntry } from '../types';
+import type { ChemicalElement, Reactant, ReactionResult, Discovery, NewsItem, ActivityLogEntry, VerificationResult } from '../types';
 import { elements } from '../data/elements';
-import { reactionRules, getReactionType, newsItems } from '../data/reactions';
+import { performSynthesis } from '../data/reactions';
+import { newsItems } from '../data/reactions';
 import { v4 as uuidv4 } from 'uuid';
 
 export type BackgroundTheme = 'neural' | 'hexagonal' | 'gradient' | 'atoms' | 'starfield';
@@ -23,7 +24,9 @@ interface LabContextType {
   clearReactants: () => void;
   reactionResult: ReactionResult | null;
   isSynthesizing: boolean;
-  synthesize: () => void;
+  isVerifying: boolean;
+  verificationResult: VerificationResult | null;
+  synthesize: (temperature?: number, pressure?: number) => void;
   discoveries: Discovery[];
   aiStatus: string;
   activeCategory: string | null;
@@ -44,6 +47,8 @@ export function LabProvider({ children }: { children: ReactNode }) {
   const [reactants, setReactants] = useState<Reactant[]>([]);
   const [reactionResult, setReactionResult] = useState<ReactionResult | null>(null);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null);
   const [discoveries, setDiscoveries] = useState<Discovery[]>([]);
   const [aiStatus, setAiStatus] = useState('System Ready');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -65,7 +70,7 @@ export function LabProvider({ children }: { children: ReactNode }) {
     setReactants(prev => {
       if (prev.length >= 2) return prev;
       const entry = { id: uuidv4(), element, quantity: 1 };
-      setAiStatus(`Loaded ${element.symbol} into reaction chamber`);
+      setAiStatus(`Loaded ${element.name} (${element.symbol}) into chamber`);
       addActivity(`Selected ${element.name} (${element.symbol})`, 'info');
       return [...prev, entry];
     });
@@ -75,22 +80,60 @@ export function LabProvider({ children }: { children: ReactNode }) {
     setReactants(prev => {
       const target = prev.find(r => r.id === id);
       if (target) {
-        setAiStatus(`Removed ${target.element.symbol} from chamber`);
+        setAiStatus(`Removed ${target.element.name} (${target.element.symbol}) from chamber`);
         addActivity(`Removed ${target.element.name} (${target.element.symbol})`, 'info');
       }
       return prev.filter(r => r.id !== id);
     });
     setReactionResult(null);
+    setVerificationResult(null);
   }, [addActivity]);
 
   const clearReactants = useCallback(() => {
     setReactants([]);
     setReactionResult(null);
+    setVerificationResult(null);
     setAiStatus('Reaction chamber cleared');
     addActivity('Cleared reaction chamber', 'info');
   }, [addActivity]);
 
-  const synthesize = useCallback(() => {
+  // Verify compound using AI web search
+  const verifyCompound = useCallback(async (result: ReactionResult) => {
+    setIsVerifying(true);
+    setAiStatus(`Verifying ${result.name} with AI search...`);
+    addActivity(`Searching online for: ${result.name}`, 'pending');
+
+    try {
+      const compoundName = encodeURIComponent(result.name);
+      const res = await fetch(`/api/verify?compound=${compoundName}`);
+      const data = await res.json();
+      
+      setVerificationResult(data);
+      
+      if (data.isKnown) {
+        setAiStatus(`✓ Verified: ${result.name} is a known compound`);
+        addActivity(`Verified: ${result.name} exists in chemical databases`, 'success');
+      } else {
+        setAiStatus(`🔍 AI search complete: ${result.name} — checking literature...`);
+        addActivity(`Search complete for: ${result.name}`, 'info');
+      }
+    } catch (err) {
+      console.error('Verification failed:', err);
+      setAiStatus(`Verification failed — could not reach search API`);
+      addActivity(`Verification failed for ${result.name}`, 'error');
+      setVerificationResult({
+        isKnown: false,
+        searchQuery: result.name,
+        summary: 'Could not verify — search service unavailable.',
+        sources: [],
+        verifiedAt: new Date(),
+      });
+    } finally {
+      setIsVerifying(false);
+    }
+  }, [addActivity]);
+
+  const synthesize = useCallback((temperature: number = 25, pressure: number = 1) => {
     if (reactants.length < 2) {
       setAiStatus('Error: Need 2 reactants');
       addActivity('Synthesis failed: need 2 reactants', 'error');
@@ -98,57 +141,59 @@ export function LabProvider({ children }: { children: ReactNode }) {
     }
 
     setIsSynthesizing(true);
-    setAiStatus('Analyzing quantum states...');
+    setVerificationResult(null);
     setReactionResult(null);
+    setAiStatus('Analyzing molecular properties...');
 
     setTimeout(() => {
       setAiStatus('Predicting reaction pathways...');
-    }, 1000);
+    }, 800);
 
     setTimeout(() => {
-      setAiStatus('Calculating bond energies...');
-    }, 2000);
+      setAiStatus('Calculating bond energies & enthalpy...');
+    }, 1800);
 
     setTimeout(() => {
+      setAiStatus('Determining product stability...');
+    }, 2800);
+
+    setTimeout(async () => {
       const [r1, r2] = reactants;
-      const type = getReactionType(r1.element.category, r2.element.category);
-      const rule = reactionRules[type] || reactionRules['metal+nonmetal'];
-      
-      let result = rule(r1.element.symbol, r2.element.symbol);
-      if (!result) {
-        result = {
-          formula: `${r1.element.symbol}${r2.element.symbol}`,
-          name: 'Unknown Compound',
-          yield: Math.random() * 30,
-          stability: 'Highly Unstable',
-          phase: 'Unknown',
-          color: '#666666',
-          description: 'Reaction thermodynamically unfavorable under standard conditions.',
-          confidence: 15,
-        };
-      }
+      const result = performSynthesis(r1.element, r2.element, temperature, pressure);
 
       setReactionResult(result);
-      setAiStatus(`Synthesis complete: ${result.formula}`);
       setExperimentCount(prev => prev + 1);
-      addActivity(`Synthesized ${result.formula} (${result.name})`, 'success');
-      
-      if (result.confidence > 70) {
-        const newDiscovery: Discovery = {
+
+      if (result.stability === 'No Reaction') {
+        setAiStatus(`No reaction: ${r1.element.symbol} + ${r2.element.symbol}`);
+        addActivity(`No reaction between ${r1.element.name} and ${r2.element.name}`, 'info');
+      } else {
+        setAiStatus(`Synthesis complete: ${result.formula} (${result.name})`);
+        addActivity(`Synthesized ${result.formula} — ${result.name} (yield: ${result.yield.toFixed(1)}%)`, 'success');
+
+        // Add to discoveries
+        const discovery: Discovery = {
           id: uuidv4(),
-          title: `Novel ${result.name}`,
+          title: result.isKnown ? result.name : `Predicted ${result.name}`,
           formula: result.formula,
+          name: result.name,
           confidence: result.confidence,
           timestamp: new Date(),
-          category: result.stability === 'Stable' ? 'Compound' : 'Reaction',
+          category: result.category as Discovery['category'],
+          isKnown: result.isKnown,
+          isVerified: false,
         };
-        setDiscoveries(prev => [newDiscovery, ...prev].slice(0, 20));
-        addActivity(`New discovery: ${result.formula} (${result.confidence.toFixed(1)}% confidence)`, 'success');
+        setDiscoveries(prev => [discovery, ...prev].slice(0, 20));
+
+        // Auto-verify if yield > 30%
+        if (result.yield > 30 && result.stability !== 'No Reaction') {
+          await verifyCompound(result);
+        }
       }
-      
+
       setIsSynthesizing(false);
     }, 3500);
-  }, [reactants, addActivity]);
+  }, [reactants, addActivity, verifyCompound]);
 
   return (
     <LabContext.Provider value={{
@@ -160,6 +205,8 @@ export function LabProvider({ children }: { children: ReactNode }) {
       clearReactants,
       reactionResult,
       isSynthesizing,
+      isVerifying,
+      verificationResult,
       synthesize,
       discoveries,
       aiStatus,
