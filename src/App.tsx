@@ -3,6 +3,7 @@ import { NeuralCanvas } from './components/canvas/NeuralCanvas';
 import { HexagonalCanvas } from './components/canvas/HexagonalCanvas';
 import { AtomsCanvas } from './components/canvas/AtomsCanvas';
 import { StarfieldCanvas } from './components/canvas/StarfieldCanvas';
+import { GradientCanvas } from './components/canvas/GradientCanvas';
 import { TopBar } from './components/layout/TopBar';
 import { LeftSidebar } from './components/layout/LeftSidebar';
 import { RightSidebar } from './components/layout/RightSidebar';
@@ -103,16 +104,7 @@ function AppContent() {
       {backgroundTheme === 'hexagonal' && <HexagonalCanvas />}
       {backgroundTheme === 'atoms' && <AtomsCanvas />}
       {backgroundTheme === 'starfield' && <StarfieldCanvas />}
-      {backgroundTheme === 'gradient' && (
-        <div className="fixed inset-0">
-          <div
-            className="w-full h-full"
-            style={{
-              background: 'linear-gradient(135deg, #030712 0%, #0a1628 25%, #0d1117 50%, #0a0f1e 75%, #050b14 100%)',
-            }}
-          />
-        </div>
-      )}
+      {backgroundTheme === 'gradient' && <GradientCanvas />}
 
       <TopBar />
       
