@@ -1,7 +1,14 @@
 // Vercel Serverless Function for compound verification
-// Uses PubChem REST API (free, no API key needed) + z-ai-web-dev-sdk web search as bonus
+// Uses PubChem REST API (free, no API key needed) + DuckDuckGo search as fallback
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    return res.status(200).end();
+  }
+
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -26,12 +33,11 @@ export default async function handler(req, res) {
   try {
     // === Step 1: Check PubChem database (reliable, free, no API key) ===
     try {
-      // Try searching by name first
-      const pubchemUrl = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(searchTerm)}/property/IUPACName,MolecularFormula,MolecularWeight,ExactMass,IsomericSMILES,CanonicalSMILES/JSON`;
+      const pubchemUrl = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(searchTerm)}/property/IUPACName,MolecularFormula,MolecularWeight,ExactMass/JSON`;
 
       const pubchemRes = await fetch(pubchemUrl, {
         headers: { 'Accept': 'application/json' },
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(10000),
       });
 
       if (pubchemRes.ok) {
@@ -67,7 +73,7 @@ export default async function handler(req, res) {
         const formulaUrl = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/fastidentity/${encodeURIComponent(formula)}/property/IUPACName,MolecularFormula,MolecularWeight/JSON`;
         const formulaRes = await fetch(formulaUrl, {
           headers: { 'Accept': 'application/json' },
-          signal: AbortSignal.timeout(8000),
+          signal: AbortSignal.timeout(10000),
         });
 
         if (formulaRes.ok) {
@@ -95,47 +101,48 @@ export default async function handler(req, res) {
       }
     }
 
-    // === Step 2: Try web search for additional context (using z-ai-web-dev-sdk if available) ===
+    // === Step 2: Try DuckDuckGo Instant Answer API as web search fallback ===
     if (!isKnown) {
       try {
-        // Dynamic import to avoid build errors if SDK is not available
-        const ZAI = (await import('z-ai-web-dev-sdk')).default;
-        const zai = await ZAI.create();
-
-        const searchResult = await zai.functions.invoke('web_search', {
-          query: `${searchTerm} chemical compound properties synthesis`,
-          num: 6,
+        const ddgUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(searchTerm + ' chemical compound')}&format=json&no_html=1`;
+        const ddgRes = await fetch(ddgUrl, {
+          headers: { 'Accept': 'application/json' },
+          signal: AbortSignal.timeout(8000),
         });
 
-        const searchSources = (searchResult || []).slice(0, 4).map((item) => ({
-          title: item.name || item.title || '',
-          url: item.host_name ? `https://${item.host_name}` : (item.url || ''),
-          snippet: item.snippet || item.description || '',
-        }));
+        if (ddgRes.ok) {
+          const ddgJson = await ddgRes.json();
+          const abstract = ddgJson?.Abstract;
+          const abstractUrl = ddgJson?.AbstractURL;
+          const relatedTopics = ddgJson?.RelatedTopics || [];
 
-        if (searchSources.length > 0) {
-          sources = searchSources;
-          const queryLower = searchTerm.toLowerCase();
-          const anyMatch = searchSources.some((s) =>
-            s.title.toLowerCase().includes(queryLower) ||
-            s.snippet.toLowerCase().includes(queryLower)
-          );
-
-          isKnown = searchSources.length >= 2 || anyMatch;
-
-          if (isKnown) {
-            const snippets = searchSources
-              .filter((s) => s.snippet)
-              .map((s) => s.snippet)
-              .slice(0, 2);
-            summary = `Web search found ${searchSources.length} results related to "${searchTerm}". ${anyMatch ? 'Direct matches found in search results.' : 'Related results found in chemical literature.'} ${snippets.join(' ')}`.substring(0, 600);
-          } else {
-            summary = `Web search found ${searchSources.length} potentially related results for "${searchTerm}", but no direct matches were found. The compound may be novel, uncommon, or described using a different naming convention in the literature.`;
+          if (abstract && abstract.length > 50) {
+            sources = [{
+              title: ddgJson?.Heading || searchTerm,
+              url: abstractUrl || `https://en.wikipedia.org/wiki/${encodeURIComponent(searchTerm)}`,
+              snippet: abstract.substring(0, 300),
+            }];
+            isKnown = true;
+            summary = `Web search found information about "${searchTerm}": ${abstract.substring(0, 400)}`;
+          } else if (relatedTopics.length > 2) {
+            const relevantTopics = relatedTopics
+              .filter(t => t.Text && t.Text.length > 30)
+              .slice(0, 3);
+            if (relevantTopics.length > 0) {
+              sources = relevantTopics.map(t => ({
+                title: t.Text?.substring(0, 80) || searchTerm,
+                url: t.FirstURL || '#',
+                snippet: t.Text?.substring(0, 200) || '',
+              }));
+              isKnown = relevantTopics.length >= 2;
+              summary = isKnown
+                ? `Web search found ${relevantTopics.length} relevant results for "${searchTerm}", suggesting this compound or related chemistry is documented in the literature.`
+                : `Limited web search results for "${searchTerm}". The compound may be novel or poorly documented.`;
+            }
           }
         }
-      } catch (sdkErr) {
-        console.log('Web search SDK not available:', sdkErr?.message);
-        // SDK not available on Vercel — that's fine, we already tried PubChem
+      } catch (ddgErr) {
+        console.log('DuckDuckGo search failed:', ddgErr?.message);
       }
     }
 
@@ -163,4 +170,4 @@ export default async function handler(req, res) {
       error: error?.message || 'Unknown error',
     });
   }
-}
+};
