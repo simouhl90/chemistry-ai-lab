@@ -2,7 +2,7 @@ export function GradientCanvas() {
   return (
     <div style={{
       position: 'fixed', inset: 0,
-      background: 'linear-gradient(160deg, #0c4a6e 0%, #075985 40%, #0369a1 100%)',
+      background: 'linear-gradient(135deg, #fce7f3 0%, #fdf2f8 40%, #fbcfe8 100%)',
     }} />
   );
 }

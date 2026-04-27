@@ -2,7 +2,7 @@ export function HexagonalCanvas() {
   return (
     <div style={{
       position: 'fixed', inset: 0,
-      background: 'linear-gradient(160deg, #022c22 0%, #064e3b 40%, #065f46 100%)',
+      background: 'linear-gradient(135deg, #d1fae5 0%, #ecfdf5 40%, #a7f3d0 100%)',
     }} />
   );
 }
