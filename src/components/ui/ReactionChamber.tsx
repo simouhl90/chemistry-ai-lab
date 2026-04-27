@@ -1,10 +1,16 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLab } from '../../context/LabContext';
 import { cn } from '../../lib/utils';
-import { FlaskConical, Zap, Beaker, X, RotateCcw, Thermometer, Gauge, Trash2, RefreshCw, Plus, Globe, CheckCircle2, AlertCircle, Shield, Loader2 } from 'lucide-react';
+import {
+  FlaskConical, Zap, Beaker, X, RotateCcw, Thermometer, Gauge, Trash2,
+  RefreshCw, Plus, Globe, CheckCircle2, AlertCircle, Shield, Loader2,
+  AlertTriangle, Info, ExternalLink, Atom, TrendingUp, Activity
+} from 'lucide-react';
 import { useState } from 'react';
 
-function ReactionFlask({ reactant, position, onRemove, onReplace }: { reactant: any; position: 'left' | 'right'; onRemove: () => void; onReplace: () => void }) {
+function ReactionFlask({ reactant, position, onRemove, onReplace }: {
+  reactant: any; position: 'left' | 'right'; onRemove: () => void; onReplace: () => void;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -13,7 +19,7 @@ function ReactionFlask({ reactant, position, onRemove, onReplace }: { reactant: 
       className="relative flex flex-col items-center gap-2"
     >
       <div className={cn(
-        'w-36 h-44 relative flex flex-col items-center justify-end pb-4 rounded-xl border-2',
+        'w-36 h-44 relative flex flex-col items-center justify-end pb-4 rounded-xl border-2 overflow-hidden',
         position === 'left' ? 'border-blue-300 bg-blue-50' : 'border-purple-300 bg-purple-50'
       )}>
         <motion.div
@@ -118,25 +124,38 @@ function VerificationPanel({ result }: { result: any }) {
       'rounded-lg p-3 mt-3 border',
       verificationResult?.isKnown
         ? 'bg-emerald-50 border-emerald-200'
-        : 'bg-amber-50 border-amber-200'
+        : verificationResult
+        ? 'bg-amber-50 border-amber-200'
+        : 'bg-blue-50 border-blue-200'
     )}>
       <div className="flex items-center gap-2 text-xs font-bold mb-2">
         <Globe className="w-3.5 h-3.5 text-blue-600" />
-        <span className="text-gray-600">AI Verification</span>
+        <span className="text-gray-600">AI Verification (PubChem + Web Search)</span>
         {isVerifying && (
           <Loader2 className="w-3 h-3 animate-spin text-blue-500" />
         )}
       </div>
       
       {isVerifying ? (
-        <div className="flex items-center gap-2">
-          <motion.div
-            animate={{ opacity: [0.3, 1, 0.3] }}
-            transition={{ duration: 1.2, repeat: Infinity }}
-            className="text-[11px] text-blue-600 font-mono"
-          >
-            Searching chemical databases...
-          </motion.div>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <motion.div
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ duration: 1.2, repeat: Infinity }}
+              className="text-[11px] text-blue-600 font-mono"
+            >
+              Searching PubChem database...
+            </motion.div>
+          </div>
+          <div className="flex items-center gap-2">
+            <motion.div
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ duration: 1.2, repeat: Infinity, delay: 0.5 }}
+              className="text-[11px] text-blue-600 font-mono"
+            >
+              Cross-referencing chemical literature...
+            </motion.div>
+          </div>
         </div>
       ) : verificationResult ? (
         <div>
@@ -151,10 +170,41 @@ function VerificationPanel({ result }: { result: any }) {
               verificationResult.isKnown ? 'text-emerald-700' : 'text-amber-700'
             )}>
               {verificationResult.isKnown
-                ? `Known Compound — ${result.formula} exists in chemistry databases`
-                : `Unverified — ${result.formula} may be novel or uncommon`}
+                ? `Known Compound — verified in chemical databases`
+                : `Unverified — ${result.formula} may be novel or undocumented`}
             </span>
           </div>
+
+          {/* PubChem data */}
+          {verificationResult.pubchemData && (
+            <div className="bg-white/60 rounded-md p-2 mb-2 border border-emerald-100">
+              <div className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-1">
+                PubChem Database Record
+              </div>
+              <div className="grid grid-cols-2 gap-1 text-[10px]">
+                <div className="text-gray-500">CID</div>
+                <div className="font-mono text-gray-800">{verificationResult.pubchemData.cid}</div>
+                {verificationResult.pubchemData.iupacName && (
+                  <>
+                    <div className="text-gray-500">IUPAC Name</div>
+                    <div className="font-mono text-gray-800 text-[9px]">{verificationResult.pubchemData.iupacName}</div>
+                  </>
+                )}
+                {verificationResult.pubchemData.molecularFormula && (
+                  <>
+                    <div className="text-gray-500">Formula</div>
+                    <div className="font-mono text-gray-800">{verificationResult.pubchemData.molecularFormula}</div>
+                  </>
+                )}
+                {verificationResult.pubchemData.molecularWeight && (
+                  <>
+                    <div className="text-gray-500">Mol. Weight</div>
+                    <div className="font-mono text-gray-800">{verificationResult.pubchemData.molecularWeight.toFixed(2)} g/mol</div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
           
           {verificationResult.summary && (
             <p className="text-[11px] text-gray-500 leading-relaxed mb-2">
@@ -170,10 +220,11 @@ function VerificationPanel({ result }: { result: any }) {
                   href={src.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block text-[10px] text-blue-600 hover:text-blue-800 hover:underline truncate"
+                  className="flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-800 hover:underline"
                   title={src.snippet}
                 >
-                  {src.title}
+                  <ExternalLink className="w-2.5 h-2.5 shrink-0" />
+                  <span className="truncate">{src.title}</span>
                 </a>
               ))}
             </div>
@@ -195,14 +246,14 @@ function ReactionOutput() {
           animate={{ opacity: 1, scale: 1, rotateY: 0 }}
           exit={{ opacity: 0, scale: 0.8 }}
           transition={{ type: 'spring', damping: 20 }}
-          className="glass-panel rounded-xl p-5 w-80"
+          className="glass-panel rounded-xl p-5 w-[340px]"
           style={{ perspective: 1000 }}
         >
           {reactionResult.stability === 'No Reaction' ? (
             <div className="text-center py-4">
               <Shield className="w-10 h-10 text-gray-400 mx-auto mb-3" />
               <div className="text-sm font-bold text-gray-700">No Reaction</div>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-gray-500 mt-2 leading-relaxed">
                 {reactionResult.description}
               </p>
               <button
@@ -223,6 +274,11 @@ function ReactionOutput() {
                     KNOWN COMPOUND
                   </span>
                 )}
+                {!reactionResult.isKnown && (
+                  <span className="text-[9px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200 ml-1">
+                    AI PREDICTED
+                  </span>
+                )}
               </div>
               
               <div className="text-center mb-4">
@@ -234,8 +290,29 @@ function ReactionOutput() {
                 </div>
                 <div className="text-sm font-bold text-gray-900">{reactionResult.name}</div>
                 <div className="text-xs text-gray-500">{reactionResult.phase} at STP</div>
+                {reactionResult.uses && (
+                  <div className="text-[10px] text-blue-600 mt-1 flex items-center justify-center gap-1">
+                    <Info className="w-3 h-3" />
+                    {reactionResult.uses.split(',')[0]}
+                  </div>
+                )}
               </div>
-              
+
+              {/* Reaction Type & Bond Type badges */}
+              <div className="flex gap-1.5 mb-3 flex-wrap">
+                <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                  {reactionResult.reactionType}
+                </span>
+                <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                  {reactionResult.bondType} Bond
+                </span>
+                {reactionResult.category && (
+                  <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-gray-50 text-gray-600 border border-gray-200">
+                    {reactionResult.category}
+                  </span>
+                )}
+              </div>
+
               {/* Balanced Equation */}
               <div className="bg-gray-50 rounded-lg p-2.5 mb-3">
                 <div className="text-[10px] text-gray-400 uppercase font-bold mb-1">Balanced Equation</div>
@@ -243,35 +320,155 @@ function ReactionOutput() {
                   {reactionResult.balancedEquation}
                 </div>
               </div>
-              
-              <div className="space-y-2 text-xs">
+
+              {/* Thermodynamic Data */}
+              {(reactionResult.enthalpy !== 0 || reactionResult.deltaG !== 0) && (
+                <div className="bg-gray-50 rounded-lg p-2.5 mb-3">
+                  <div className="text-[10px] text-gray-400 uppercase font-bold mb-1.5 flex items-center gap-1">
+                    <Activity className="w-3 h-3" />
+                    Thermodynamic Data
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">ΔH</span>
+                      <span className={cn(
+                        'font-mono',
+                        reactionResult.enthalpy < 0 ? 'text-blue-700' : 'text-red-600'
+                      )}>
+                        {reactionResult.enthalpy} kJ/mol
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">ΔS</span>
+                      <span className="font-mono text-gray-700">{reactionResult.entropy} J/mol·K</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">ΔG</span>
+                      <span className={cn(
+                        'font-mono',
+                        reactionResult.deltaG < 0 ? 'text-emerald-600' : 'text-red-600'
+                      )}>
+                        {reactionResult.deltaG.toFixed(1)} kJ/mol
+                      </span>
+                    </div>
+                    {reactionResult.enthalpy < 0 && (
+                      <div className="col-span-2 text-[10px] text-emerald-600 flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3" />
+                        Exothermic — releases energy
+                      </div>
+                    )}
+                    {reactionResult.enthalpy > 0 && (
+                      <div className="col-span-2 text-[10px] text-red-500 flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3 rotate-180" />
+                        Endothermic — absorbs energy
+                      </div>
+                    )}
+                    {reactionResult.deltaG < 0 && (
+                      <div className="col-span-2 text-[10px] text-emerald-600 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Spontaneous under current conditions (ΔG &lt; 0)
+                      </div>
+                    )}
+                    {reactionResult.deltaG > 0 && (
+                      <div className="col-span-2 text-[10px] text-amber-600 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        Non-spontaneous (ΔG &gt; 0) — requires energy input
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Properties Grid */}
+              <div className="space-y-2 text-xs mb-3">
                 <div className="flex justify-between">
                   <span className="text-gray-500">Molar Mass</span>
                   <span className="font-mono text-blue-700">{reactionResult.molarMass} g/mol</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-gray-500">Predicted Yield</span>
-                  <span className="font-mono text-blue-700">{reactionResult.yield.toFixed(1)}%</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${reactionResult.yield}%`,
+                          backgroundColor: reactionResult.yield > 70 ? '#10b981' : reactionResult.yield > 40 ? '#f59e0b' : '#ef4444',
+                        }}
+                      />
+                    </div>
+                    <span className="font-mono text-blue-700 w-10 text-right">{reactionResult.yield.toFixed(1)}%</span>
+                  </div>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Stability</span>
                   <span className={cn(
-                    'font-mono',
+                    'font-mono font-semibold',
                     reactionResult.stability === 'Stable' ? 'text-emerald-600' :
                     reactionResult.stability === 'Unstable' ? 'text-amber-600' : 'text-red-600'
                   )}>
-                    {reactionResult.stability}
+                    {reactionResult.stability === 'Stable' ? '●' : reactionResult.stability === 'Unstable' ? '●' : '●'} {reactionResult.stability}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">AI Confidence</span>
                   <span className="font-mono text-blue-700">{reactionResult.confidence.toFixed(1)}%</span>
                 </div>
+                {reactionResult.optimalTemp && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Optimal Temp</span>
+                    <span className="font-mono text-gray-700">{reactionResult.optimalTemp}°C</span>
+                  </div>
+                )}
+                {reactionResult.boilingPoint && reactionResult.boilingPoint > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Boiling Point</span>
+                    <span className="font-mono text-gray-700">{reactionResult.boilingPoint}°C</span>
+                  </div>
+                )}
+                {reactionResult.meltingPoint && reactionResult.meltingPoint > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Melting Point</span>
+                    <span className="font-mono text-gray-700">{reactionResult.meltingPoint}°C</span>
+                  </div>
+                )}
+                {reactionResult.solubility && reactionResult.solubility !== 'N/A' && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Solubility</span>
+                    <span className="font-mono text-gray-700 text-[11px]">{reactionResult.solubility}</span>
+                  </div>
+                )}
+                {reactionResult.appearance && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Appearance</span>
+                    <span className="font-mono text-gray-700 text-[11px] text-right max-w-[180px]">{reactionResult.appearance}</span>
+                  </div>
+                )}
+                {reactionResult.crystalStructure && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Crystal</span>
+                    <span className="font-mono text-gray-700 text-[11px]">{reactionResult.crystalStructure}</span>
+                  </div>
+                )}
               </div>
               
-              <div className="mt-3 text-[11px] text-gray-500 leading-relaxed">
+              {/* Description */}
+              <div className="text-[11px] text-gray-500 leading-relaxed mb-3">
                 {reactionResult.description}
               </div>
+
+              {/* Safety Warning */}
+              {reactionResult.safetyInfo && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 mb-3">
+                  <div className="flex items-center gap-1 text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    Safety
+                  </div>
+                  <p className="text-[11px] text-amber-800 leading-relaxed">
+                    {reactionResult.safetyInfo}
+                  </p>
+                </div>
+              )}
 
               <VerificationPanel result={reactionResult} />
 
@@ -312,7 +509,7 @@ function ReactionOutput() {
 }
 
 export function ReactionChamber() {
-  const { reactants, clearReactants, removeReactants, aiStatus } = useLab();
+  const { reactants, clearReactants, removeReactant, aiStatus } = useLab();
   const [temperature, setTemperature] = useState(25);
   const [pressure, setPressure] = useState(1);
   const hasElements = reactants.length > 0;
@@ -337,7 +534,7 @@ export function ReactionChamber() {
             <input
               type="range"
               min="-273"
-              max="1000"
+              max="2000"
               value={temperature}
               onChange={(e) => setTemperature(Number(e.target.value))}
               className="w-16 accent-blue-500"
@@ -350,7 +547,7 @@ export function ReactionChamber() {
             <input
               type="range"
               min="0"
-              max="100"
+              max="200"
               value={pressure}
               onChange={(e) => setPressure(Number(e.target.value))}
               className="w-16 accent-blue-500"
@@ -373,6 +570,12 @@ export function ReactionChamber() {
             </button>
           )}
         </div>
+      </div>
+      
+      {/* AI Status bar */}
+      <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-lg px-3 py-1.5">
+        <Atom className="w-3 h-3 text-blue-500 shrink-0" />
+        <span className="text-[11px] text-blue-700 font-mono truncate">{aiStatus}</span>
       </div>
       
       {/* Main chamber */}

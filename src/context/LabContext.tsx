@@ -50,7 +50,7 @@ export function LabProvider({ children }: { children: ReactNode }) {
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null);
   const [discoveries, setDiscoveries] = useState<Discovery[]>([]);
-  const [aiStatus, setAiStatus] = useState('System Ready');
+  const [aiStatus, setAiStatus] = useState('System Ready — Select elements to begin');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [experimentCount, setExperimentCount] = useState(0);
@@ -69,9 +69,14 @@ export function LabProvider({ children }: { children: ReactNode }) {
   const addReactant = useCallback((element: ChemicalElement) => {
     setReactants(prev => {
       if (prev.length >= 2) return prev;
+      // Prevent adding same element twice
+      if (prev.some(r => r.element.symbol === element.symbol)) {
+        setAiStatus(`${element.symbol} is already in the chamber`);
+        return prev;
+      }
       const entry = { id: uuidv4(), element, quantity: 1 };
       setAiStatus(`Loaded ${element.name} (${element.symbol}) into chamber`);
-      addActivity(`Selected ${element.name} (${element.symbol})`, 'info');
+      addActivity(`Selected ${element.name} (${element.symbol}, Z=${element.atomicNumber})`, 'info');
       return [...prev, entry];
     });
   }, [addActivity]);
@@ -93,38 +98,49 @@ export function LabProvider({ children }: { children: ReactNode }) {
     setReactants([]);
     setReactionResult(null);
     setVerificationResult(null);
-    setAiStatus('Reaction chamber cleared');
+    setAiStatus('Reaction chamber cleared — select new elements');
     addActivity('Cleared reaction chamber', 'info');
   }, [addActivity]);
 
-  // Verify compound using AI web search
+  // Verify compound using PubChem API + web search
   const verifyCompound = useCallback(async (result: ReactionResult) => {
     setIsVerifying(true);
-    setAiStatus(`Verifying ${result.name} with AI search...`);
-    addActivity(`Searching online for: ${result.name}`, 'pending');
+    setAiStatus(`Searching PubChem & chemical databases for ${result.name}...`);
+    addActivity(`Verifying: ${result.formula} (${result.name})`, 'pending');
 
     try {
       const compoundName = encodeURIComponent(result.name);
-      const res = await fetch(`/api/verify?compound=${compoundName}`);
+      const formulaParam = encodeURIComponent(result.formula.replace(/[₀₁₂₃₄₅₆₇₈₉]/g, (c) => '₀₁₂₃₄₅₆₇₈₉'.indexOf(c)));
+      const res = await fetch(`/api/verify?compound=${compoundName}&formula=${result.formula}`);
       const data = await res.json();
-      
-      setVerificationResult(data);
-      
+
+      const verificationResult: VerificationResult = {
+        isKnown: data.isKnown,
+        searchQuery: data.searchQuery,
+        summary: data.summary,
+        sources: data.sources || [],
+        verifiedAt: new Date(data.verifiedAt),
+        pubchemData: data.pubchemData,
+      };
+
+      setVerificationResult(verificationResult);
+
       if (data.isKnown) {
-        setAiStatus(`✓ Verified: ${result.name} is a known compound`);
-        addActivity(`Verified: ${result.name} exists in chemical databases`, 'success');
+        const pubchemInfo = data.pubchemData ? ` (CID: ${data.pubchemData.cid})` : '';
+        setAiStatus(`Verified: ${result.name} exists in chemical databases${pubchemInfo}`);
+        addActivity(`Verified: ${result.formula} — ${result.name} found in PubChem${pubchemInfo}`, 'success');
       } else {
-        setAiStatus(`🔍 AI search complete: ${result.name} — checking literature...`);
-        addActivity(`Search complete for: ${result.name}`, 'info');
+        setAiStatus(`Unverified: ${result.name} may be novel or undocumented`);
+        addActivity(`Unverified: ${result.formula} — ${result.name} not found in databases`, 'info');
       }
     } catch (err) {
       console.error('Verification failed:', err);
       setAiStatus(`Verification failed — could not reach search API`);
-      addActivity(`Verification failed for ${result.name}`, 'error');
+      addActivity(`Verification failed for ${result.formula}`, 'error');
       setVerificationResult({
         isKnown: false,
         searchQuery: result.name,
-        summary: 'Could not verify — search service unavailable.',
+        summary: 'Could not verify — search service unavailable. The compound may or may not exist in chemical literature.',
         sources: [],
         verifiedAt: new Date(),
       });
@@ -135,7 +151,7 @@ export function LabProvider({ children }: { children: ReactNode }) {
 
   const synthesize = useCallback((temperature: number = 25, pressure: number = 1) => {
     if (reactants.length < 2) {
-      setAiStatus('Error: Need 2 reactants');
+      setAiStatus('Need 2 elements to begin synthesis');
       addActivity('Synthesis failed: need 2 reactants', 'error');
       return;
     }
@@ -147,15 +163,19 @@ export function LabProvider({ children }: { children: ReactNode }) {
 
     setTimeout(() => {
       setAiStatus('Predicting reaction pathways...');
-    }, 800);
+    }, 600);
 
     setTimeout(() => {
       setAiStatus('Calculating bond energies & enthalpy...');
+    }, 1200);
+
+    setTimeout(() => {
+      setAiStatus('Determining product stability & yield...');
     }, 1800);
 
     setTimeout(() => {
-      setAiStatus('Determining product stability...');
-    }, 2800);
+      setAiStatus('Evaluating thermodynamic feasibility...');
+    }, 2400);
 
     setTimeout(async () => {
       const [r1, r2] = reactants;
@@ -168,8 +188,11 @@ export function LabProvider({ children }: { children: ReactNode }) {
         setAiStatus(`No reaction: ${r1.element.symbol} + ${r2.element.symbol}`);
         addActivity(`No reaction between ${r1.element.name} and ${r2.element.name}`, 'info');
       } else {
-        setAiStatus(`Synthesis complete: ${result.formula} (${result.name})`);
-        addActivity(`Synthesized ${result.formula} — ${result.name} (yield: ${result.yield.toFixed(1)}%)`, 'success');
+        const yieldStr = result.yield.toFixed(1);
+        const enthalpyStr = result.enthalpy ? ` | ΔH = ${result.enthalpy} kJ/mol` : '';
+        const dGStr = result.deltaG ? ` | ΔG = ${result.deltaG.toFixed(1)} kJ/mol` : '';
+        setAiStatus(`Synthesis complete: ${result.formula} — ${result.name} (${yieldStr}% yield)`);
+        addActivity(`Synthesized ${result.formula} — ${result.name} (yield: ${yieldStr}%)${enthalpyStr}${dGStr}`, 'success');
 
         // Add to discoveries
         const discovery: Discovery = {
@@ -185,14 +208,14 @@ export function LabProvider({ children }: { children: ReactNode }) {
         };
         setDiscoveries(prev => [discovery, ...prev].slice(0, 20));
 
-        // Auto-verify if yield > 30%
-        if (result.yield > 30 && result.stability !== 'No Reaction') {
+        // Auto-verify all successful reactions
+        if (result.yield > 5 && result.stability !== 'No Reaction') {
           await verifyCompound(result);
         }
       }
 
       setIsSynthesizing(false);
-    }, 3500);
+    }, 3000);
   }, [reactants, addActivity, verifyCompound]);
 
   return (
