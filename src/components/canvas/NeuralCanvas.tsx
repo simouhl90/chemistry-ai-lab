@@ -73,5 +73,5 @@ export function NeuralCanvas() {
     return () => { window.removeEventListener('resize', resize); window.removeEventListener('mousemove', handleMouseMove); cancelAnimationFrame(animationRef.current); };
   }, [createParticle]);
 
-  return <canvas ref={canvasRef} className="w-full h-full pointer-events-none" />;
+  return <canvas ref={canvasRef} style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />;
 }

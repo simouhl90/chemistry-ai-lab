@@ -1,7 +1,6 @@
 import { LabProvider, useLab } from './context/LabContext';
 import { NeuralCanvas } from './components/canvas/NeuralCanvas';
 import { HexagonalCanvas } from './components/canvas/HexagonalCanvas';
-import { GradientCanvas } from './components/canvas/GradientCanvas';
 import { AtomsCanvas } from './components/canvas/AtomsCanvas';
 import { StarfieldCanvas } from './components/canvas/StarfieldCanvas';
 import { TopBar } from './components/layout/TopBar';
@@ -102,36 +101,35 @@ function App() {
 function AppContent() {
   const { backgroundTheme } = useLab();
 
-  const backgrounds: Record<string, React.FC> = {
-    neural: NeuralCanvas,
-    hexagonal: HexagonalCanvas,
-    atoms: AtomsCanvas,
-    starfield: StarfieldCanvas,
-  };
-
-  const CanvasComponent = backgrounds[backgroundTheme];
-
   return (
     <div
       className="h-screen w-screen flex flex-col relative overflow-hidden"
       style={{ background: '#050b14' }}
     >
-      {/* Background layer */}
-      <div className="fixed inset-0" style={{ zIndex: 0 }}>
-        {CanvasComponent ? <CanvasComponent key={backgroundTheme} /> : null}
+      {/* All backgrounds rendered, toggle visibility */}
+      <div style={{ display: backgroundTheme === 'neural' ? 'block' : 'none' }} className="fixed inset-0" >
+        <NeuralCanvas />
       </div>
-
-      {/* Gradient overlay for gradient theme */}
-      {backgroundTheme === 'gradient' && (
+      <div style={{ display: backgroundTheme === 'hexagonal' ? 'block' : 'none' }} className="fixed inset-0" >
+        <HexagonalCanvas />
+      </div>
+      <div style={{ display: backgroundTheme === 'atoms' ? 'block' : 'none' }} className="fixed inset-0" >
+        <AtomsCanvas />
+      </div>
+      <div style={{ display: backgroundTheme === 'starfield' ? 'block' : 'none' }} className="fixed inset-0" >
+        <StarfieldCanvas />
+      </div>
+      <div
+        style={{ display: backgroundTheme === 'gradient' ? 'block' : 'none' }}
+        className="fixed inset-0"
+      >
         <div
-          key="gradient-bg"
-          className="fixed inset-0"
+          className="w-full h-full"
           style={{
-            zIndex: 0,
             background: 'linear-gradient(135deg, #030712 0%, #0a1628 25%, #0d1117 50%, #0a0f1e 75%, #050b14 100%)',
           }}
         />
-      )}
+      </div>
 
       <TopBar />
 

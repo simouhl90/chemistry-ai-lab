@@ -142,5 +142,5 @@ export function AtomsCanvas() {
     return () => { window.removeEventListener('resize', resize); cancelAnimationFrame(animationRef.current); };
   }, []);
 
-  return <canvas ref={canvasRef} className="w-full h-full pointer-events-none" />;
+  return <canvas ref={canvasRef} style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />;
 }
