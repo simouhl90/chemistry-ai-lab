@@ -90,6 +90,41 @@ function MainContent() {
   );
 }
 
+function AppContent() {
+  const { backgroundTheme } = useLab();
+
+  return (
+    <div
+      className="h-screen w-screen flex flex-col relative overflow-hidden"
+      style={{ background: '#050b14' }}
+    >
+      {/* Only render the active background — avoids canvas stacking conflicts */}
+      {backgroundTheme === 'neural' && <NeuralCanvas />}
+      {backgroundTheme === 'hexagonal' && <HexagonalCanvas />}
+      {backgroundTheme === 'atoms' && <AtomsCanvas />}
+      {backgroundTheme === 'starfield' && <StarfieldCanvas />}
+      {backgroundTheme === 'gradient' && (
+        <div className="fixed inset-0">
+          <div
+            className="w-full h-full"
+            style={{
+              background: 'linear-gradient(135deg, #030712 0%, #0a1628 25%, #0d1117 50%, #0a0f1e 75%, #050b14 100%)',
+            }}
+          />
+        </div>
+      )}
+
+      <TopBar />
+      
+      <div className="flex-1 flex overflow-hidden relative z-10">
+        <LeftSidebar />
+        <MainContent />
+        <RightSidebar />
+      </div>
+    </div>
+  );
+}
+
 function App() {
   return (
     <LabProvider>
