@@ -102,45 +102,101 @@ export function LabProvider({ children }: { children: ReactNode }) {
     addActivity('Cleared reaction chamber', 'info');
   }, [addActivity]);
 
-  // Verify compound using PubChem API + web search
+  // Verify compound using PubChem API directly from browser (CORS-enabled)
   const verifyCompound = useCallback(async (result: ReactionResult) => {
     setIsVerifying(true);
-    setAiStatus(`Searching PubChem & chemical databases for ${result.name}...`);
+    setAiStatus(`Searching PubChem database for ${result.name}...`);
     addActivity(`Verifying: ${result.formula} (${result.name})`, 'pending');
 
+    let isKnown = false;
+    let summary = '';
+    let sources: VerificationResult['sources'] = [];
+    let pubchemData: VerificationResult['pubchemData'] = undefined;
+
     try {
-      const compoundName = encodeURIComponent(result.name);
-      const formulaParam = encodeURIComponent(result.formula.replace(/[₀₁₂₃₄₅₆₇₈₉]/g, (c) => '₀₁₂₃₄₅₆₇₈₉'.indexOf(c)));
-      const res = await fetch(`/api/verify?compound=${compoundName}&formula=${result.formula}`);
-      const data = await res.json();
+      // Step 1: Search PubChem by compound name
+      try {
+        const pubchemUrl = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(result.name)}/property/IUPACName,MolecularFormula,MolecularWeight,ExactMass/JSON`;
+        const res = await fetch(pubchemUrl);
 
-      const verificationResult: VerificationResult = {
-        isKnown: data.isKnown,
-        searchQuery: data.searchQuery,
-        summary: data.summary,
-        sources: data.sources || [],
-        verifiedAt: new Date(data.verifiedAt),
-        pubchemData: data.pubchemData,
-      };
+        if (res.ok) {
+          const json = await res.json();
+          const props = json?.PropertyTable?.Properties?.[0];
+          if (props) {
+            pubchemData = {
+              cid: String(props.CID || ''),
+              iupacName: props.IUPACName || '',
+              molecularFormula: props.MolecularFormula || '',
+              molecularWeight: props.MolecularWeight || 0,
+              exactMass: props.ExactMass || 0,
+            };
+            isKnown = true;
+            summary = `${result.name} is a known chemical compound registered in PubChem (CID: ${pubchemData.cid}). IUPAC name: ${pubchemData.iupacName || 'N/A'}. Molecular formula: ${pubchemData.molecularFormula || 'N/A'}. Molecular weight: ${(pubchemData.molecularWeight || 0).toFixed(2)} g/mol. This compound has been characterized in the scientific literature and its properties are well-documented in chemical databases worldwide.`;
+            sources = [{
+              title: `PubChem CID ${pubchemData.cid}: ${pubchemData.iupacName || result.name}`,
+              url: `https://pubchem.ncbi.nlm.nih.gov/compound/${pubchemData.cid}`,
+              snippet: `${pubchemData.molecularFormula} | MW: ${(pubchemData.molecularWeight || 0).toFixed(2)} g/mol`,
+            }];
+          }
+        }
+      } catch (e) {
+        console.log('PubChem name search failed:', e);
+      }
 
+      // Step 2: If name search failed, try by formula
+      if (!isKnown) {
+        try {
+          const plainFormula = result.formula.replace(/[₀₁₂₃₄₅₆₇₈₉]/g, (c) => '0123456789'['₀₁₂₃₄₅₆₇₈₉'.indexOf(c)]);
+          const formulaUrl = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/fastidentity/${encodeURIComponent(plainFormula)}/property/IUPACName,MolecularFormula,MolecularWeight/JSON`;
+          const res = await fetch(formulaUrl);
+          if (res.ok) {
+            const json = await res.json();
+            const first = json?.PropertyTable?.Properties?.[0];
+            if (first) {
+              pubchemData = {
+                cid: String(first.CID || ''),
+                iupacName: first.IUPACName || '',
+                molecularFormula: first.MolecularFormula || plainFormula,
+                molecularWeight: first.MolecularWeight || 0,
+                exactMass: 0,
+              };
+              isKnown = true;
+              summary = `A compound with formula "${result.formula}" exists in PubChem (CID: ${pubchemData.cid}). ${pubchemData.iupacName ? `IUPAC name: ${pubchemData.iupacName}.` : ''} Molecular weight: ${(pubchemData.molecularWeight || 0).toFixed(2)} g/mol.`;
+              sources = [{
+                title: `PubChem CID ${pubchemData.cid}`,
+                url: `https://pubchem.ncbi.nlm.nih.gov/compound/${pubchemData.cid}`,
+                snippet: `${pubchemData.molecularFormula} | MW: ${(pubchemData.molecularWeight || 0).toFixed(2)} g/mol`,
+              }];
+            }
+          }
+        } catch (e) {
+          console.log('PubChem formula search failed:', e);
+        }
+      }
+
+      if (!isKnown) {
+        summary = `"${result.name}" was not found in PubChem. This could mean: (1) the compound is genuinely novel, (2) it may exist but is rare or poorly documented, (3) the predicted formula may not correspond to a stable real compound, or (4) the compound uses a different name in the literature.`;
+      }
+
+      const verificationResult: VerificationResult = { isKnown, searchQuery: result.name, summary, sources, verifiedAt: new Date(), pubchemData };
       setVerificationResult(verificationResult);
 
-      if (data.isKnown) {
-        const pubchemInfo = data.pubchemData ? ` (CID: ${data.pubchemData.cid})` : '';
-        setAiStatus(`Verified: ${result.name} exists in chemical databases${pubchemInfo}`);
-        addActivity(`Verified: ${result.formula} — ${result.name} found in PubChem${pubchemInfo}`, 'success');
+      if (isKnown) {
+        const info = pubchemData ? ` (CID: ${pubchemData.cid})` : '';
+        setAiStatus(`Verified: ${result.name} exists in PubChem${info}`);
+        addActivity(`Verified: ${result.formula} — ${result.name} found in PubChem${info}`, 'success');
       } else {
         setAiStatus(`Unverified: ${result.name} may be novel or undocumented`);
-        addActivity(`Unverified: ${result.formula} — ${result.name} not found in databases`, 'info');
+        addActivity(`Unverified: ${result.formula} — ${result.name} not found in PubChem`, 'info');
       }
     } catch (err) {
       console.error('Verification failed:', err);
-      setAiStatus(`Verification failed — could not reach search API`);
+      setAiStatus(`Verification failed — network error`);
       addActivity(`Verification failed for ${result.formula}`, 'error');
       setVerificationResult({
         isKnown: false,
         searchQuery: result.name,
-        summary: 'Could not verify — search service unavailable. The compound may or may not exist in chemical literature.',
+        summary: 'Could not verify — network error. Please check your connection and try again.',
         sources: [],
         verifiedAt: new Date(),
       });

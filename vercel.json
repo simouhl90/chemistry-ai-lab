@@ -1,14 +1,5 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "installCommand": "npm install",
-  "rewrites": [
-    { "source": "/((?!assets|favicon|icons|api).*)", "destination": "/index.html" }
-  ],
-  "functions": {
-    "api/verify.js": {
-      "memory": 128,
-      "maxDuration": 15
-    }
-  }
+  "installCommand": "npm install"
 }
