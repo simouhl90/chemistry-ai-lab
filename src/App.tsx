@@ -133,48 +133,4 @@ function App() {
   );
 }
 
-function AppContent() {
-  const { backgroundTheme } = useLab();
-
-  return (
-    <div
-      className="h-screen w-screen flex flex-col relative overflow-hidden"
-      style={{ background: '#050b14' }}
-    >
-      {/* All backgrounds rendered, toggle visibility */}
-      <div style={{ display: backgroundTheme === 'neural' ? 'block' : 'none' }} className="fixed inset-0" >
-        <NeuralCanvas />
-      </div>
-      <div style={{ display: backgroundTheme === 'hexagonal' ? 'block' : 'none' }} className="fixed inset-0" >
-        <HexagonalCanvas />
-      </div>
-      <div style={{ display: backgroundTheme === 'atoms' ? 'block' : 'none' }} className="fixed inset-0" >
-        <AtomsCanvas />
-      </div>
-      <div style={{ display: backgroundTheme === 'starfield' ? 'block' : 'none' }} className="fixed inset-0" >
-        <StarfieldCanvas />
-      </div>
-      <div
-        style={{ display: backgroundTheme === 'gradient' ? 'block' : 'none' }}
-        className="fixed inset-0"
-      >
-        <div
-          className="w-full h-full"
-          style={{
-            background: 'linear-gradient(135deg, #030712 0%, #0a1628 25%, #0d1117 50%, #0a0f1e 75%, #050b14 100%)',
-          }}
-        />
-      </div>
-
-      <TopBar />
-
-      <div className="flex-1 flex overflow-hidden relative z-10">
-        <LeftSidebar />
-        <MainContent />
-        <RightSidebar />
-      </div>
-    </div>
-  );
-}
-
 export default App;
