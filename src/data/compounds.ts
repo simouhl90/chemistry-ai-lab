@@ -549,17 +549,6 @@ export const compoundDB: Record<string, Compound> = {
   },
 
   // === NITROGEN OXIDES ===
-  'H-N': {
-    formula: 'NO', name: 'Nitric Oxide', molarMass: 30.01, phase: 'Gas',
-    color: '#e8eaf6', stability: 'Unstable',
-    description: 'Colorless gas, free radical with one unpaired electron. Crucial signaling molecule in the human body (endothelium-derived relaxing factor, vasodilation). Nobel Prize in Medicine 1998 (Furchgott, Ignarro, Murad) for its discovery as a signaling molecule. Reacts rapidly with O₂ to form NO₂.',
-    balancedEquation: 'N₂ + O₂ → 2NO   ΔH = +181 kJ/mol (endothermic, at >2000°C)',
-    category: 'Compound', baseYield: 35, reactionType: 'Synthesis', bondType: 'Covalent',
-    enthalpy: 91, entropy: 211, deltaG: 87, optimalTemp: 2500, optimalPressure: 1,
-    safetyInfo: 'Toxic at high concentrations. Reacts rapidly with O₂ to form toxic NO₂. Short biological half-life (~2 seconds).',
-    boilingPoint: -152, meltingPoint: -164, solubility: '0.06 g/L (25°C)', appearance: 'Colorless gas (oxidizes to brown NO₂ in air)',
-    uses: 'Vasodilation drug (Viagra pathway, nitroglycerin), industrial nitric acid production (Ostwald process), biological signaling'
-  },
   'N-S': {
     formula: 'N₂O', name: 'Nitrous Oxide (Laughing Gas)', molarMass: 44.01, phase: 'Gas',
     color: '#e8f5e9', stability: 'Stable',
@@ -731,20 +720,119 @@ export const compoundDB: Record<string, Compound> = {
     boilingPoint: 3000, meltingPoint: 3000, solubility: 'Insoluble', appearance: 'White powder (h-BN)', crystalStructure: 'Hexagonal (h-BN) / Cubic zincblende (c-BN)',
     uses: 'Lubricant (h-BN), abrasives and cutting tools (c-BN), cosmetics, cosmetics, dielectric in electronics, crucibles'
   },
+  // === NEWLY ADDED COMPOUNDS ===
+
+'H-K': {
+    formula: 'KH', name: 'Potassium Hydride', molarMass: 40.11, phase: 'Solid',
+    color: '#f5f5f5', stability: 'Stable',
+    description: 'White crystalline ionic hydride. Extremely reactive base and powerful reducing agent. Reacts violently with water releasing hydrogen gas. Used as a desiccant and in organic synthesis for deprotonating weakly acidic compounds. Distributed commercially as a dispersion in mineral oil for safe handling.',
+    balancedEquation: 'K + 1/2 H₂ → KH',
+    category: 'Hydride', baseYield: 70, reactionType: 'Synthesis', bondType: 'Ionic',
+    enthalpy: -58, entropy: 50, deltaG: -73, optimalTemp: 400, optimalPressure: 1,
+    safetyInfo: 'EXTREMELY REACTIVE with water and moisture. Releases flammable H₂ gas. Use under inert atmosphere only.',
+    boilingPoint: 0, meltingPoint: 0, solubility: 'Reacts violently with water', appearance: 'White crystalline solid (handled under oil)',
+    uses: 'Powerful reducing agent, organic synthesis base, hydrogen storage research'
+  },
+
+'H-Na': {
+    formula: 'NaH', name: 'Sodium Hydride', molarMass: 24.0, phase: 'Solid',
+    color: '#e0e0e0', stability: 'Stable',
+    description: 'White crystalline ionic hydride. One of the most widely used strong bases in organic chemistry. Deprotonates carbon acids including alcohols, terminal alkynes, and ketones. Reacts violently with water. Sold as 60% dispersion in mineral oil for safe handling. Key intermediate in NaBH₄ production.',
+    balancedEquation: '2Na + H₂ → 2NaH',
+    category: 'Hydride', baseYield: 75, reactionType: 'Synthesis', bondType: 'Ionic',
+    enthalpy: -56, entropy: 40, deltaG: -68, optimalTemp: 300, optimalPressure: 1,
+    safetyInfo: 'EXTREMELY REACTIVE with water and protic solvents. Releases flammable H₂. Strong base causes severe burns.',
+    boilingPoint: 0, meltingPoint: 425, solubility: 'Reacts violently with water', appearance: 'White to gray powder (stored under mineral oil)',
+    uses: 'Organic synthesis base, hydrogen storage, Dieckmann condensation, NaBH₄ precursor'
+  },
+
+'Co-S': {
+    formula: 'CoS', name: 'Cobalt(II) Sulfide', molarMass: 91.0, phase: 'Solid',
+    color: '#1a237e', stability: 'Stable',
+    description: 'Black precipitate formed when H₂S is bubbled through Co²⁺ solutions. Insoluble in water but dissolves in dilute acids. Used as a precursor for cobalt extraction in hydrometallurgy. Occurs as the mineral linnaeite. Semiconductor material.',
+    balancedEquation: 'Co + S → CoS',
+    category: 'Sulfide', baseYield: 80, reactionType: 'Synthesis', bondType: 'Ionic',
+    enthalpy: -84, entropy: 60, deltaG: -82, optimalTemp: 600, optimalPressure: 1,
+    safetyInfo: 'Low toxicity. Cobalt compounds can be toxic in large amounts.',
+    boilingPoint: 0, meltingPoint: 0, solubility: 'Insoluble in water', appearance: 'Black precipitate or powder',
+    uses: 'Cobalt extraction (hydrometallurgy), mineral pigment, semiconductor research'
+  },
+
+'Ni-S': {
+    formula: 'NiS', name: 'Nickel(II) Sulfide', molarMass: 90.76, phase: 'Solid',
+    color: '#212121', stability: 'Stable',
+    description: 'Black crystalline solid. Occurs naturally as the mineral millerite. One of the most important nickel ores (pentlandite is (Fe,Ni)₉S₈). Used as a cathode material in lithium-ion battery research. Precipitates as black NiS in qualitative inorganic analysis.',
+    balancedEquation: 'Ni + S → NiS',
+    category: 'Sulfide', baseYield: 80, reactionType: 'Synthesis', bondType: 'Ionic',
+    enthalpy: -82, entropy: 53, deltaG: -79, optimalTemp: 600, optimalPressure: 1,
+    safetyInfo: 'Low to moderate toxicity. Nickel compounds are suspected carcinogens (IARC Group 1).',
+    boilingPoint: 0, meltingPoint: 797, solubility: 'Insoluble in water', appearance: 'Black crystalline solid',
+    uses: 'Nickel ore, lithium battery cathode research, mineral pigment, catalyst precursor'
+  },
+
+'Mn-S': {
+    formula: 'MnS', name: 'Manganese(II) Sulfide', molarMass: 87.0, phase: 'Solid',
+    color: '#ff8f00', stability: 'Stable',
+    description: 'Salmon-pink or green solid (color depends on crystal form). Exists in three polymorphs: alpha (rock salt), beta (zincblende), gamma (wurtzite). Used as a starting material for manganese extraction. Alpha-MnS occurs naturally as alabandite mineral. Insoluble in water but dissolves in acids.',
+    balancedEquation: 'Mn + S → MnS',
+    category: 'Sulfide', baseYield: 78, reactionType: 'Synthesis', bondType: 'Ionic',
+    enthalpy: -214, entropy: 78, deltaG: -218, optimalTemp: 700, optimalPressure: 1,
+    safetyInfo: 'Low toxicity. Manganese dust inhalation can cause manganism (neurological disorder).',
+    boilingPoint: 0, meltingPoint: 1610, solubility: 'Insoluble in water', appearance: 'Salmon-pink to green crystalline solid', crystalStructure: 'Cubic (rock salt, alpha form)',
+    uses: 'Manganese ore source, phosphor activator, pigment, agricultural micronutrient'
+  },
+
+'Fe-F': {
+    formula: 'FeF₂', name: 'Iron(II) Fluoride', molarMass: 93.84, phase: 'Solid',
+    color: '#e8f5e9', stability: 'Stable',
+    description: 'White crystalline solid that adopts the rutile (TiO₂) structure. Unlike most iron(II) compounds, FeF₂ is stable in air (fluoride passivation). Exhibits antiferromagnetic ordering below 78 K (Néel temperature). Used in dentistry as a fluoride source in some formulations.',
+    balancedEquation: 'Fe + F₂ → FeF₂',
+    category: 'Salt', baseYield: 75, reactionType: 'Synthesis', bondType: 'Ionic',
+    enthalpy: -688, entropy: 80, deltaG: -644, optimalTemp: 1000, optimalPressure: 1,
+    safetyInfo: 'Irritating to skin and eyes. Fluoride compounds can be toxic in large amounts.',
+    boilingPoint: 0, meltingPoint: 1020, solubility: 'Slightly soluble (2.4 g/L, 25°C)', appearance: 'White crystalline powder', crystalStructure: 'Tetragonal (rutile-type)',
+    uses: 'Dentistry (fluoride source), catalyst, optical coatings, fluorine chemistry research'
+  },
+
+'Cu-F': {
+    formula: 'CuF₂', name: 'Copper(II) Fluoride', molarMass: 101.54, phase: 'Solid',
+    color: '#e3f2fd', stability: 'Stable',
+    description: 'Blue crystalline solid. Most stable copper halide. Forms beautiful blue-green solutions. Used as a fluorinating agent in organic synthesis and in plasma etching of semiconductor materials. Hygroscopic — absorbs moisture from air. Melts at 836°C.',
+    balancedEquation: 'Cu + F₂ → CuF₂',
+    category: 'Salt', baseYield: 78, reactionType: 'Synthesis', bondType: 'Ionic',
+    enthalpy: -531, entropy: 72, deltaG: -487, optimalTemp: 600, optimalPressure: 1,
+    safetyInfo: 'Irritating and toxic. Fluoride compounds can cause bone and organ damage with chronic exposure.',
+    boilingPoint: 0, meltingPoint: 836, solubility: 'Slightly soluble (7 g/L, 25°C)', appearance: 'Blue crystalline powder (white when anhydrous)',
+    uses: 'Organic fluorination reagent, semiconductor etching, catalyst, dental fluoride source'
+  },
+
+'Zn-F': {
+    formula: 'ZnF₂', name: 'Zinc Fluoride', molarMass: 103.41, phase: 'Solid',
+    color: '#f5f5f5', stability: 'Stable',
+    description: 'White crystalline solid with very low refractive index (n = 1.38), making it valuable for anti-reflective optical coatings. Used in electroplating baths, as a catalyst in organic synthesis, and in wood preservation. Forms tetrahydrate ZnF₂·4H₂O.',
+    balancedEquation: 'Zn + F₂ → ZnF₂',
+    category: 'Salt', baseYield: 80, reactionType: 'Synthesis', bondType: 'Ionic',
+    enthalpy: -764, entropy: 65, deltaG: -712, optimalTemp: 800, optimalPressure: 1,
+    safetyInfo: 'Irritating to skin and eyes. Fluoride compounds require caution.',
+    boilingPoint: 0, meltingPoint: 872, solubility: '50 g/L (20°C)', appearance: 'White crystalline powder', crystalStructure: 'Tetragonal (rutile-type)',
+    uses: 'Anti-reflective coatings (low n=1.38), electroplating, wood preservative, catalyst'
+  },
+
+'Cl-Ag': {
+    formula: 'AgCl', name: 'Silver Chloride', molarMass: 143.32, phase: 'Solid',
+    color: '#f5f5f5', stability: 'Stable',
+    description: 'White precipitate that darkens on exposure to light (photodecomposition: 2AgCl → 2Ag + Cl₂). Foundation of photographic film (Talbot, 1839). Ag/AgCl electrode is the standard reference electrode in electrochemistry (E° = +0.222 V). Ksp = 1.8 x 10⁻¹⁰ (extremely insoluble).',
+    balancedEquation: 'AgNO₃ + NaCl → AgCl + NaNO₃',
+    category: 'Salt', baseYield: 95, reactionType: 'Precipitation', bondType: 'Ionic',
+    enthalpy: -127, entropy: 96, deltaG: -110, optimalTemp: 25, optimalPressure: 1,
+    safetyInfo: 'Low toxicity. Can cause argyria (blue-gray skin) with chronic exposure. Light-sensitive.',
+    boilingPoint: 1547, meltingPoint: 455, solubility: '0.0019 g/L (25°C)', appearance: 'White crystalline solid (darkens with light)', crystalStructure: 'Face-centered cubic (NaCl-type)',
+    uses: 'Photography, antiseptic, reference electrodes, wound dressings, cloud seeding'
+  },
 };
 
-// Helper: get compound key from two element symbols
-export function getCompoundKey(symA: string, symB: string): string {
-  return [symA, symB].sort().join('-');
-}
-
-// Lookup a compound by element pair
 export function lookupCompound(symA: string, symB: string): Compound | null {
-  const key = getCompoundKey(symA, symB);
+  const sorted = [symA, symB].sort();
+  const key = sorted.join('-');
   return compoundDB[key] || null;
-}
-
-// Check if a compound name/formula exists in database
-export function compoundExists(symA: string, symB: string): boolean {
-  return lookupCompound(symA, symB) !== null;
 }

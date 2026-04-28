@@ -175,19 +175,68 @@ export function LabProvider({ children }: { children: ReactNode }) {
       }
 
       if (!isKnown) {
-        summary = `"${result.name}" was not found in PubChem. This could mean: (1) the compound is genuinely novel, (2) it may exist but is rare or poorly documented, (3) the predicted formula may not correspond to a stable real compound, or (4) the compound uses a different name in the literature.`;
-      }
+        // Step 3: Try Wikipedia API as fallback
+        try {
+          setAiStatus(`Searching Wikipedia for ${result.name}...`);
+          const wikiUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(result.name)}`;
+          const wikiRes = await fetch(wikiUrl);
+          if (wikiRes.ok) {
+            const wikiData = await wikiRes.json();
+            if (wikiData && wikiData.title && !wikiData.type) { // type !== 'disambiguation' etc
+              isKnown = true;
+              const wikiExtract = (wikiData.extract || '').substring(0, 300);
+              summary = `"${result.name}" was found on Wikipedia. ${wikiExtract}... Source: Wikipedia confirms this compound exists in the scientific literature.`;
+              sources.push({
+                title: `Wikipedia: ${wikiData.title}`,
+                url: wikiData.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(result.name)}`,
+                snippet: wikiExtract.substring(0, 150) + '...',
+              });
+            }
+          }
+        } catch (e) {
+          console.log('Wikipedia name search failed:', e);
+        }
+
+        // Step 4: If still not found, try Wikipedia with formula
+        if (!isKnown) {
+          try {
+            const plainFormula = result.formula.replace(/[₀₁₂₃₄₅₆₇₈₉]/g, (c) => '0123456789'['₀₁₂₃₄₅₆₇₈₉'.indexOf(c)]);
+            const wikiFormulaUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(plainFormula)}`;
+            const wikiFRes = await fetch(wikiFormulaUrl);
+            if (wikiFRes.ok) {
+              const wikiFData = await wikiFRes.json();
+              if (wikiFData && wikiFData.title && !wikiFData.type) {
+                isKnown = true;
+                const wikiFExtract = (wikiFData.extract || '').substring(0, 300);
+                summary = `A compound matching "${result.formula}" was found on Wikipedia: ${wikiFData.title}. ${wikiFExtract}... This confirms the compound exists in the literature.`;
+                sources.push({
+                  title: `Wikipedia: ${wikiFData.title}`,
+                  url: wikiFData.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(plainFormula)}`,
+                  snippet: wikiFExtract.substring(0, 150) + '...',
+                });
+              }
+            }
+          } catch (e) {
+            console.log('Wikipedia formula search failed:', e);
+          }
+        }
+
+        if (!isKnown) {
+          summary = `"${result.name}" was not found in PubChem or Wikipedia. This could mean: (1) the compound is genuinely novel, (2) it may exist but is rare or poorly documented, (3) the predicted formula may not correspond to a stable real compound, or (4) the compound uses a different name in the literature.`;
+        }
+      } // End of Wikipedia fallback block
 
       const verificationResult: VerificationResult = { isKnown, searchQuery: result.name, summary, sources, verifiedAt: new Date(), pubchemData };
       setVerificationResult(verificationResult);
 
       if (isKnown) {
         const info = pubchemData ? ` (CID: ${pubchemData.cid})` : '';
-        setAiStatus(`Verified: ${result.name} exists in PubChem${info}`);
-        addActivity(`Verified: ${result.formula} — ${result.name} found in PubChem${info}`, 'success');
+        const wikiNote = !pubchemData ? ' (Wikipedia)' : '';
+        setAiStatus(`Verified: ${result.name} exists${info}${wikiNote}`);
+        addActivity(`Verified: ${result.formula} — ${result.name} found${wikiNote}`, 'success');
       } else {
         setAiStatus(`Unverified: ${result.name} may be novel or undocumented`);
-        addActivity(`Unverified: ${result.formula} — ${result.name} not found in PubChem`, 'info');
+        addActivity(`Unverified: ${result.formula} — ${result.name} not found in PubChem or Wikipedia`, 'info');
       }
     } catch (err) {
       console.error('Verification failed:', err);

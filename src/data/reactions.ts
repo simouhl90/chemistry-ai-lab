@@ -280,7 +280,6 @@ function predictCompound(elA: ChemicalElement, elB: ChemicalElement, temp: numbe
     const molarMass = +(metal.atomicMass * metalCount + nonMetal.atomicMass * nonMetalCount).toFixed(2);
     const baseYield = 50 + enDiff * 15 + Math.random() * 15;
     const yield_ = applyConditions(baseYield, temp, pressure, 500, 1, true);
-    const confidence = Math.min(92, 40 + enDiff * 12 + Math.random() * 10);
 
     // Determine bond type from electronegativity difference
     const bondType: ReactionResult['bondType'] = enDiff > 1.7 ? 'Ionic' : 'Polar Covalent';
@@ -288,24 +287,111 @@ function predictCompound(elA: ChemicalElement, elB: ChemicalElement, temp: numbe
     // Stability from electronegativity difference and charge balance
     const stability: ReactionResult['stability'] = enDiff > 2 ? 'Stable' : enDiff > 1.5 ? 'Unstable' : 'Highly Unstable';
 
-    // Estimate enthalpy based on lattice/covalent bond energy
-    const estimatedEnthalpy = -(150 + enDiff * 80 + metalCharge * nonMetalCharge * 40 + Math.random() * 30);
-    const estimatedEntropy = 30 + Math.random() * 80;
+    // Estimate enthalpy using Born-Haber-like approximation for ionic compounds
+    const estimatedEnthalpy = bondType === 'Ionic'
+      ? -(100 + enDiff * 60 + metalCharge * nonMetalCharge * 30)
+      : -(50 + enDiff * 40);
+
+    // Estimate entropy using group contribution based on predicted phase
+    const predictedPhase = enDiff > 1.7 ? 'Solid' : (lessEN.phase === 'Gas' || moreEN.phase === 'Gas' ? 'Gas' : 'Solid');
+    const estimatedEntropy = predictedPhase === 'Gas'
+      ? 180 + Math.random() * 70   // gases: 180-250 J/mol·K
+      : 40 + Math.random() * 40;     // solids: 40-80 J/mol·K
+
     const estimatedDeltaG = calcDeltaG(estimatedEnthalpy, estimatedEntropy, temp);
+    const isSpontaneous = estimatedDeltaG <= 0;
+
+    // Acid-Base oxide classification
+    let oxideNote = '';
+    if (nonMetal.symbol === 'O') {
+      const amphotericMetals = ['Al', 'Zn', 'Pb', 'Sn', 'Cr'];
+      const basicMetals = ['Li', 'Na', 'K', 'Rb', 'Cs', 'Be', 'Mg', 'Ca', 'Sr', 'Ba', 'Ra'];
+      if (amphotericMetals.includes(metal.symbol)) {
+        oxideNote = ` Predicted to be an amphoteric oxide — dissolves in both acids and bases (similar to Al₂O₃ or ZnO).`;
+      } else if (basicMetals.includes(metal.symbol)) {
+        oxideNote = ` Predicted to be a basic oxide — reacts with acids to form ${metal.symbol}²⁺ salts and water.`;
+      } else {
+        oxideNote = ` Predicted to be an acidic oxide — reacts with bases to form oxoanions.`;
+      }
+    }
+
+    // Better property estimation for predicted compounds
+    const estimatedMp = bondType === 'Ionic'
+      ? Math.round(400 + enDiff * 400 + metalCharge * nonMetalCharge * 100 - Math.random() * 200)
+      : Math.round(-50 + Math.random() * 80);  // covalent small molecules tend to have low mp
+    const estimatedBp = bondType === 'Ionic'
+      ? Math.round(estimatedMp + 300 + Math.random() * 400)
+      : Math.round(-100 + Math.random() * 100);
+
+    // Solubility rules
+    let estimatedSolubility: string;
+    const solubleAnions = ['Cl', 'F', 'Br', 'I', 'NO3']; // Most salts of these are soluble
+    const insolubleAnions = ['S', 'CO3', 'PO4', 'OH'];
+    const alkaliMetals = ['Li', 'Na', 'K', 'Rb', 'Cs'];
+    if (alkaliMetals.includes(metal.symbol) && solubleAnions.includes(nonMetal.symbol)) {
+      estimatedSolubility = 'Highly soluble';
+    } else if (insolubleAnions.includes(nonMetal.symbol) && !alkaliMetals.includes(metal.symbol)) {
+      estimatedSolubility = 'Insoluble or sparingly soluble';
+    } else if (nonMetal.symbol === 'O') {
+      estimatedSolubility = bondType === 'Ionic' ? 'Reacts with water' : 'Insoluble';
+    } else {
+      estimatedSolubility = 'Moderately soluble';
+    }
+
+    // Appearance estimation based on element colors
+    const metalColorHex = elementColors[metal.symbol] || '#9e9e9e';
+    const estimatedAppearance = predictedPhase === 'Gas'
+      ? 'Colorless gas (predicted)'
+      : `${bondType === 'Ionic' ? 'Crystalline' : 'Powdery'} solid (predicted, color: ${metalColorHex})`;
+
+    // Smarter confidence scoring
+    // Check if elements are in same group as known compounds
+    const sameGroupBonus = 10;
+    const knownKeys = Object.keys({
+      'Cl-Li': 1, 'Cl-Na': 1, 'Cl-K': 1, 'Br-Na': 1, 'Br-K': 1, 'I-Na': 1, 'I-K': 1,
+      'F-Na': 1, 'F-K': 1, 'F-Li': 1, 'Ca-Cl': 1, 'Mg-Cl': 1, 'Fe-O': 1, 'Fe-S': 1,
+      'Fe-Cl': 1, 'Cu-O': 1, 'Cu-S': 1, 'Zn-O': 1, 'Zn-S': 1, 'Al-O': 1, 'Al-Cl': 1,
+      'Ti-O': 1, 'Pb-O': 1, 'Hg-O': 1, 'Hg-S': 1, 'Ba-S': 1, 'Ag-Cl': 1, 'Ag-S': 1,
+      'Ba-O': 1, 'Sr-O': 1, 'V-O': 1, 'W-O': 1, 'Mo-O': 1, 'Sn-O': 1, 'Mn-O': 1,
+      'Cr-O': 1, 'Co-O': 1, 'Ni-O': 1, 'Cl-Ba': 1, 'H-Br': 1, 'H-I': 1,
+    });
+    const hasSimilarKnown = knownKeys.some(k => {
+      const [e1, e2] = k.split('-');
+      return (e1 === metal.symbol || e2 === metal.symbol) && (e1 === nonMetal.symbol || e2 === nonMetal.symbol);
+    }) || knownKeys.some(k => {
+      const [e1, e2] = k.split('-');
+      return (e1 === metal.symbol || e2 === nonMetal.symbol);
+    });
+
+    // Check for octet/charge rule violations
+    let chargePenalty = 0;
+    if (metalCharge > 4) chargePenalty -= 15; // Very high charges are unlikely
+    if (nonMetalCharge > 4) chargePenalty -= 10;
+    if (metal.symbol === 'N' || nonMetal.symbol === 'N') {
+      // Nitrogen compounds are harder to predict
+      if (nonMetal.symbol !== 'N') chargePenalty -= 5;
+    }
+
+    let smartConfidence = 40 + enDiff * 10;
+    if (enDiff > 2.5) smartConfidence += 10; // High EN diff = more confident ionic
+    if (hasSimilarKnown) smartConfidence += sameGroupBonus;
+    smartConfidence += chargePenalty;
+    if (!isSpontaneous) smartConfidence -= 10; // Non-spontaneous = less confident
+    smartConfidence = Math.max(15, Math.min(85, smartConfidence));
 
     const result = defaultResult();
     result.formula = formula;
     result.name = name;
     result.yield = yield_;
-    result.stability = stability;
-    result.phase = 'Solid'; // Most ionic compounds are solids
+    result.stability = isSpontaneous ? stability : 'Highly Unstable';
+    result.phase = predictedPhase;
     result.color = elementColors[metal.symbol] || '#9e9e9e';
-    result.description = `Predicted ${bondType.toLowerCase()} compound. Electronegativity difference (${enDiff.toFixed(2)}) suggests ${enDiff > 1.7 ? 'predominantly ionic bonding with electron transfer from metal to non-metal' : 'polar covalent bonding with significant electron sharing but partial charge separation'}. ${metal.name} (EN = ${metal.electronegativity || 'N/A'}) donates ${metalCharge} electron(s) to ${nonMetal.name} (EN = ${nonMetal.electronegativity || 'N/A'}). The predicted formula ${formula} follows charge balance rules (${metalCharge}:${nonMetalCharge} charges → LCM-based stoichiometry).`;
+    result.description = `Predicted ${bondType.toLowerCase()} compound.${isSpontaneous ? '' : ' This prediction has POSITIVE ΔG, indicating the reaction is NON-SPONTANEOUS under standard conditions.'} Electronegativity difference (${enDiff.toFixed(2)}) suggests ${enDiff > 1.7 ? 'predominantly ionic bonding with electron transfer from metal to non-metal' : 'polar covalent bonding with significant electron sharing but partial charge separation'}. ${metal.name} (EN = ${metal.electronegativity || 'N/A'}) donates ${metalCharge} electron(s) to ${nonMetal.name} (EN = ${nonMetal.electronegativity || 'N/A'}). The predicted formula ${formula} follows charge balance rules (${metalCharge}:${nonMetalCharge} charges → LCM-based stoichiometry).${oxideNote}`;
     result.balancedEquation = metalCount === 1 && nonMetalCount === 1
       ? `${metal.symbol} + ${nonMetal.symbol} → ${formula}`
       : `${metalCount > 1 ? metal.symbol + subscript(metalCount) : metal.symbol} + ${nonMetalCount > 1 ? nonMetal.symbol + subscript(nonMetalCount) : nonMetal.symbol} → ${formula}`;
     result.molarMass = molarMass;
-    result.confidence = confidence;
+    result.confidence = smartConfidence;
     result.isKnown = false;
     result.category = 'Predicted';
     result.reactionType = 'Ionic Bonding';
@@ -316,7 +402,10 @@ function predictCompound(elA: ChemicalElement, elB: ChemicalElement, temp: numbe
     result.optimalTemp = 400 + Math.round(Math.random() * 400);
     result.optimalPressure = 1;
     result.safetyInfo = 'Predicted compound — safety data unavailable. Exercise caution when handling.';
-    result.appearance = 'Predicted — physical properties estimated from ionic model';
+    result.appearance = estimatedAppearance;
+    result.boilingPoint = estimatedBp;
+    result.meltingPoint = estimatedMp;
+    result.solubility = estimatedSolubility;
     return result;
   }
 
