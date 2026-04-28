@@ -272,7 +272,7 @@ export const compoundDB: Record<string, Compound> = {
     category: 'Sulfide', baseYield: 90, reactionType: 'Synthesis', bondType: 'Ionic',
     enthalpy: -206, entropy: 58, deltaG: -201, optimalTemp: 600, optimalPressure: 1,
     safetyInfo: 'Low toxicity. Cadmium-doped ZnS phosphors contain toxic Cd.',
-    boilingPoint: 1720, meltingPoint: 1700 (sublimes), solubility: 'Insoluble in water', appearance: 'White to yellowish powder', crystalStructure: 'Cubic (sphalerite) / Hexagonal (wurtzite)',
+    boilingPoint: 1720, meltingPoint: 1700, /* sublimes */ solubility: 'Insoluble in water', appearance: 'White to yellowish powder', crystalStructure: 'Cubic (sphalerite) / Hexagonal (wurtzite)',
     uses: 'Luminescent paints, X-ray screens, optical coatings, phosphors (CRT), electroluminescent panels'
   },
   'Zn-Cl': {
@@ -327,7 +327,7 @@ export const compoundDB: Record<string, Compound> = {
     category: 'Salt', baseYield: 88, reactionType: 'Synthesis', bondType: 'Ionic',
     enthalpy: -704, entropy: 110, deltaG: -629, optimalTemp: 300, optimalPressure: 1,
     safetyInfo: 'Corrosive. Reacts violently with water releasing HCl gas. Causes severe burns.',
-    boilingPoint: 180 (sublimes), meltingPoint: 193, solubility: '460 g/L (25°C, exothermic)', appearance: 'White/yellow crystalline solid', crystalStructure: 'Layered cubic (close-packed Cl, Al in octahedral holes)',
+    boilingPoint: 180, meltingPoint: 193, /* sublimes at 180°C */ solubility: '460 g/L (25°C, exothermic)', appearance: 'White/yellow crystalline solid', crystalStructure: 'Layered cubic (close-packed Cl, Al in octahedral holes)',
     uses: 'Friedel-Crafts reactions, polymerization catalyst, antiperspirant (aluminum chlorohydrate), petroleum refining'
   },
   'Si-O': {
